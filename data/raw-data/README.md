@@ -1,14 +1,11 @@
 # raw-data
 
-This folder should contain all raw data. As needed add sub-folders.
+Raw data access
 
-Currently, as an example, it contains a simple made-up data-set in an Excel file.
+The raw data used in this project come from the Health and Retirement Study (HRS) and the RAND HRS Longitudinal File. Due to data use agreements and file size limitations, the raw Stata data files are not included in this GitHub repository.
 
-The dataset contains the variables `Height`, `Weight` and `Gender` of a few imaginary individuals.
+Researchers can obtain the data directly from the HRS website (https://hrs.isr.umich.edu/
+) after registering for an account and agreeing to the data use terms.
 
-The dataset purposefully contains some faulty entries that need to be cleaned.
-
-Generally, any dataset should contain some meta-data explaining what each variable in the dataset is. (This is often called a **Codebook**.) For this simple example, the codebook is given as a second sheet in the Excel file.
-
-This raw data-set should generally not be edited by hand. It should instead be loaded and processed/cleaned using code.
+Once downloaded, the raw .dta files should be placed in the data/raw/ directory following the folder structure described above. All scripts in this repository assume this directory structure and use relative paths via the here() package.
 

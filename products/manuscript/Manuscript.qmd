@@ -12,32 +12,22 @@ csl: ../../assets/american-journal-of-epidemiology.csl
 
 
 
-
-
-
 ```{r, echo=FALSE, message=FALSE}
 # load a few R packages
 library(here)
 library(knitr)
+library(haven)
 ```
 
 
 **Authors**  
 
-* Liang Lai$^{1,2,*}$ (ORCID: 0000-0000-1234-5678) 
+* Liang Lai$^{1,*}$ (ORCID: 0000-0000-1234-5678) 
 
 
 **Author affiliations**  
 
 1. College of Public Health, University of Georgia, Athens, GA, USA.
-
-
-$*$ These authors contributed equally to this work.
-
-$\land$ Corresponding author: some@email.com
-
-$\dagger$ Disclaimer: The opinions expressed in this article are the
-author's own and don't reflect their employer.
 
 
 {{< pagebreak >}}
@@ -61,29 +51,38 @@ Mid-life high body mass index (BMI) has been linked to poorer cognitive performa
 We will use data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50+, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. We will use publicly available HRS/RAND HRS data files that can be shared within the class repository to ensure full reproducibility.
 The analytic dataset will be constructed at the person-wave level and then converted into an incident-event (time-to-event) format for survival analysis. Key measures include repeated BMI observations over time, baseline covariates (e.g., age, sex, race/ethnicity, education), and time-varying health and lifestyle factors where available. Because HRS is a real-world longitudinal survey, it contains typical “messy” features (e.g., missingness across waves, irregular observation patterns, attrition, and measurement variability), which requires explicit data cleaning and processing.
 
+## Quick check data 
 
-##
+```{r}
+# path to data
+# note the use of the here() package and not absolute paths 
+# and  the raw data is stata edition
+hrs_raw <- read_dta(here("data","raw-data","randhrs1992_2022v1.dta"))
+```
+```{r}
+glimpse(hrs_raw)
+head(hrs_raw)
+```
 
+The raw RAND HRS dataset used in this project contains 45,234 observations (rows) and 19,880 variables (columns). The large number of variables is primarily due to the longitudinal structure of HRS: many measures are repeated across multiple survey waves, and the same concept is stored as wave-specific variables. In RAND HRS, these repeated measures are often organized using wave identifiers (e.g., r1, r2, r3, …), corresponding to survey waves over time (up to ~16 waves depending on the measure and harmonization). As a result, a single construct (e.g., BMI, cognition, health conditions) may appear in multiple wave-specific versions, substantially increasing the total column count.
 
+We will extract the wave-specific BMI and cognition variables needed for the analysis, and then restructure the data into a person-period (long) format to support BMI variability window construction and time-to-event modeling.
 
 ## Questions/Hypotheses to be addressed
-_State the research questions you plan to answer with this analysis._
-
 * Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50+?
-
-Examples of reproducible research projects can for instance be found in [@mckay2020; @mckay2020a].
-
 
 
 {{< pagebreak >}}
 
-
-# Methods 
-
-_Describe your methods. That should describe the data, the cleaning processes, and the analysis approaches. You might want to provide a shorter description here and all the details in the supplement._
+# Planned Methods
+We will construct BMI variability (BMIV) as the coefficient of variation (CV) of repeated BMI measurements across fixed windows. And we will use Cox hazards regression model.
 
 
-## Schematic of workflow
+
+
+
+
+## Schematic of workflow(Planing)
 
 Sometimes you might want to show a schematic diagram/figure that was not created with code (if you can do it with code, do it). @fig-schematic is an example of some - completely random/unrelated - schematic that was generated with BioRender.
 We store those figures in the `assets` folder.
@@ -95,10 +94,7 @@ We store those figures in the `assets` folder.
 knitr::include_graphics(here("assets","antigen-recognition.png"))
 ```
 
-
-
-
-## Data acquisition
+## Data acquisition 
 _As applicable, explain where and how you got the data. If you directly import the data from an online source, you can combine this section with the next._
 
 
