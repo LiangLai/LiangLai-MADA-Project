@@ -1,6 +1,6 @@
 ---
-title: "Example Manuscript Template for a Data Analysis Project"
-author: ""
+title: "Association between Body Mass Index Variability and Subsequent Dementia Risk in Older Adults"
+author: "Liang Lai"
 format:
   docx:
     toc: false
@@ -10,9 +10,9 @@ bibliography: ../../assets/dataanalysis-references.bib
 csl: ../../assets/american-journal-of-epidemiology.csl
 ---
 
-The structure below is one possible setup for a manuscript stemming from a data analysis project. It loosely follows the structure of a standard scientific manuscript. Adjust as needed. You don't need to have exactly these sections, but the content covering those sections should be addressed.
 
-This uses [MS Word as output format](https://quarto.org/docs/output-formats/ms-word.html). See [the Quarto documentation](https://quarto.org/) for instructions on how to use other formats.
+
+
 
 
 ```{r, echo=FALSE, message=FALSE}
@@ -24,16 +24,13 @@ library(knitr)
 
 **Authors**  
 
-* First Author$^{1,2,*}$ (ORCID: 0000-0000-1234-5678) 
-* Second Author$^{3, *}$
-* Third Author$^{3, \dagger}$
-* Last Author$^{1, 2, \land}$ 
+* Liang Lai$^{1,2,*}$ (ORCID: 0000-0000-1234-5678) 
+
 
 **Author affiliations**  
 
 1. College of Public Health, University of Georgia, Athens, GA, USA.
-2. Another Affiliation, Athens, GA, USA.
-3. Yet another Affiliation.
+
 
 $*$ These authors contributed equally to this work.
 
@@ -58,15 +55,21 @@ _It is recommended to use a structured abstract with Background/Methods/Results/
 # Introduction 
 
 ## General Background Information
-_Provide enough background on your topic that others can understand the why and how of your analysis_ 
+Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life, but little is known about whether a more unstable BMI over time is associated with worse cognitive outcomes. This study investigated the relationship between long-term BMI variability (BMIV) and dementia risk in older adults in the US.
 
 ## Description of data and data source
-_Describe what the data is, what it contains, where it is from, etc. Eventually this might be part of a methods section._
+We will use data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50+, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. We will use publicly available HRS/RAND HRS data files that can be shared within the class repository to ensure full reproducibility.
+The analytic dataset will be constructed at the person-wave level and then converted into an incident-event (time-to-event) format for survival analysis. Key measures include repeated BMI observations over time, baseline covariates (e.g., age, sex, race/ethnicity, education), and time-varying health and lifestyle factors where available. Because HRS is a real-world longitudinal survey, it contains typical “messy” features (e.g., missingness across waves, irregular observation patterns, attrition, and measurement variability), which requires explicit data cleaning and processing.
+
+
+##
+
+
 
 ## Questions/Hypotheses to be addressed
 _State the research questions you plan to answer with this analysis._
 
-To cite other work (important everywhere, but likely happens first in introduction), make sure your references are in the BibTeX file specified in the YAML header above and have the right BibTeX key. Then you can include like this:
+* Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50+?
 
 Examples of reproducible research projects can for instance be found in [@mckay2020; @mckay2020a].
 

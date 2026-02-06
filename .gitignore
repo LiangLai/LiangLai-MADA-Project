@@ -36,3 +36,6 @@ results/large-files/*
 
 # But we want to commit the folder and the readme!
 !results/large-files/readme.md
+
+# Ignore raw data files (HRS / RAND HRS)
+data/raw-data/randhrs1992_2022v1.dta
