@@ -1,6 +1,6 @@
 # Overview
 
-A template file and folder structure for a data analysis project/paper done with R/Quarto/GitHub. Other components (e.g., other programming languages) can be added as needed. 
+This is Liang Lai class project repository
 
 
 # Pre-requisites
