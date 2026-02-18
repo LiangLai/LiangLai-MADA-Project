@@ -55,9 +55,8 @@ The analytic dataset will be constructed at the person-wave level and then conve
 
 ```{r}
 # path to data
-# note the use of the here() package and not absolute paths 
-# and  the raw data is stata edition
-hrs_raw <- read_dta(here("data","raw-data","randhrs1992_2022v1.dta"))
+# Use sample data (only 100 size) to check
+hrs_raw <- readRDS(here("data", "processed-data", "randhrs_sample_100.rds"))
 ```
 ```{r}
 glimpse(hrs_raw)

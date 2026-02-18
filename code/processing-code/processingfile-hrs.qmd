@@ -30,6 +30,17 @@ but it adds typing. You can do it either way.
 hrs_raw <- read_dta(here("data","raw-data","randhrs1992_2022v1.dta"))
 ```
 
+```{r}
+# 2. select 100 sample
+set.seed(123) 
+hrs_sample_100 <- hrs_raw %>%
+  slice_sample(n = 100)
+
+# 3. save to processed-data 
+saveRDS(hrs_sample_100, here("data", "processed-data", "randhrs_sample_100.rds"))
+```
+
+
 
 # Check data
 
