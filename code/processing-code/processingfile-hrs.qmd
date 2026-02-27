@@ -1,14 +1,13 @@
 ---
-title: "An example cleaning script"
-author: "Andreas Handel"
-date: "2024-02-07"
+title: "Cleaning and processing code for HRS data"
+author: "Liang Lai"
+date: "2026-02-27"
 output: html_document
 ---
 
 # Setup
 
 Load needed packages. make sure they are installed.
-
 ```{r}
 library(readxl) #for loading Excel files
 library(dplyr) #for data processing/cleaning
@@ -19,11 +18,6 @@ library(haven) # for load stata data
 ```
 
 # Data loading
-
-Note that for functions that come from specific packages (instead of base R), I often specify both package and function like so:
-package::function() that's not required one could just call the function specifying the package makes it clearer where the function "lives",
-but it adds typing. You can do it either way.
-
 ```{r}
 # path to data
 # note the use of the here() package and not absolute paths
@@ -41,40 +35,31 @@ saveRDS(hrs_sample_100, here("data", "processed-data", "randhrs_sample_100.rds")
 ```
 
 
-
-# Check data
-
-First we can look at the data
+# Check data 
+First we can look at the data. At this point, the data is wide and we will need to reshape it to long format for analysis, but we can still check the data in its current form. We can find there are different waves of data collection, and each wave has a set of variables (including 16waves from 1992-2022 ). For example, the first wave (1992) has variables like r1bmi, r1age, r1sex, etc., and the second wave (1994) has variables like r2bmi, r2age, r2sex, etc. We can also see that there are some missing values in the data.
 
 ```{r}
-glimpse(hrs_raw)
-head(rawdata)
+glimpse(hrs_sample_100)
+head(hrs_sample_100)
 ```
-
-
-```{r}
-dplyr::glimpse(rawdata)
-summary(rawdata)
-head(rawdata)
-skimr::skim(rawdata)
-```
-
 
 
 # Cleaning
 
-By inspecting the data as done above, we find some problems that need addressing:
+Next, follow the following steps to process the data:
 
-First, there is an entry for height which says "sixty" instead of a number. 
-Does that mean it should be a numeric 60? It somehow doesn't make sense since the weight is 60kg, which can't happen for a 60cm person (a baby).
-Since we don't know how to fix this, we might decide to remove the person. This "sixty" entry also turned all Height entries into characters instead of numeric. That conversion to character also means that our summary function isn't very meaningful. So let's fix that first.
-
+1. reshape the data from wide to long format, so that each row represents a person-wave observation.
 ```{r}
 d1 <- rawdata %>% dplyr::filter( Height != "sixty" ) %>% 
                   dplyr::mutate(Height = as.numeric(Height))
 skimr::skim(d1)
 hist(d1$Height)
 ```
+
+
+2. select the relevant variables for analysis
+
+
 
 Now we see that there is one person with a height of 6. That could be a typo, or someone mistakenly entered their height in feet. We assume that we know it was a mistaken entry as feet and convert to centimeters. Depending on your knowledge of the data, you might instead want to remove this person.
 
