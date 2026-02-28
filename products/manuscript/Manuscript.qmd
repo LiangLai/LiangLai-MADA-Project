@@ -56,11 +56,11 @@ The analytic dataset will be constructed at the person-wave level and then conve
 ```{r}
 # path to data
 # Use sample data (only 100 size) to check
-hrs_raw <- readRDS(here("data", "processed-data", "randhrs_sample_100.rds"))
+hrs_sample <- readRDS(here("data", "processed-data", "randhrs_sample_100.rds"))
 ```
 ```{r}
-glimpse(hrs_raw)
-head(hrs_raw)
+glimpse(hrs_sample)
+head(hrs_sample)
 ```
 
 The raw RAND HRS dataset used in this project contains 45,234 observations (rows) and 19,880 variables (columns). The large number of variables is primarily due to the longitudinal structure of HRS: many measures are repeated across multiple survey waves, and the same concept is stored as wave-specific variables. In RAND HRS, these repeated measures are often organized using wave identifiers (e.g., r1, r2, r3, …), corresponding to survey waves over time (up to ~16 waves depending on the measure and harmonization). As a result, a single construct (e.g., BMI, cognition, health conditions) may appear in multiple wave-specific versions, substantially increasing the total column count.

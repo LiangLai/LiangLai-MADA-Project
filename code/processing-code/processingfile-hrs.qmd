@@ -6,7 +6,6 @@ output: html_document
 ---
 
 # Setup
-
 Load needed packages. make sure they are installed.
 ```{r}
 library(readxl) #for loading Excel files
@@ -15,63 +14,256 @@ library(tidyr) #for data processing/cleaning
 library(skimr) #for nice visualization of data 
 library(here) #to set paths
 library(haven) # for load stata data
+library(stringr)
 ```
 
 # Data loading
+Link to the HRS data: <https://hrsdata.isr.umich.edu/data-products/long-format-data-rand-hrs-longitudinal-file-2020>. 
+In this link, you can find the long format data files (rlong, hlong, rwide) that we will use for this project. You can also find the codebook and documentation for these datasets in the same link.
+
+Link to the lange weir cognition data: <https://hrsdata.isr.umich.edu/data-products/langa-weir-classification-cognitive-function-1995-2022>. This dataset contains the cognitive classification variable (cogimp) that we will use to determine dementia status in our analysis. We will merge this cognition data with the main HRS data later in the cleaning process. However, the cognition data is in wide format and we will need to reshape it to long format before merging.
 ```{r}
-# path to data
-# note the use of the here() package and not absolute paths
-hrs_raw <- read_dta(here("data","raw-data","randhrs1992_2022v1.dta"))
+# load HRS data (long format)  
+rlong <- read_sas(here("data", "raw-data", "rlong_table.sas7bdat"))
+hlong <- read_sas(here("data", "raw-data", "hlong_table.sas7bdat"))
+rwide <- read_sas(here("data", "raw-data", "rwide_table.sas7bdat"))
+
+# load lange weir data 
+lange_weir_raw <- read_dta(here("data","raw-data","cogfinalimp_9522wide.dta"))
 ```
 
 ```{r}
-# 2. select 100 sample
+# check all overlapping columns
+overlap_cols <- c(
+  intersect(names(rlong), names(hlong)),
+  intersect(names(rlong), names(rwide)),
+  intersect(names(hlong), names(rwide))
+) %>% 
+  unique() %>%
+  setdiff(c("HHIDPN", "WAVE_NUMBER"))
+
+# Drop overlapping columns from hlong and rwide, then merge
+hrs_long <- rlong %>%
+  full_join(hlong %>% select(-any_of(overlap_cols)), by = c("HHIDPN", "WAVE_NUMBER")) %>%
+  left_join(rwide %>% select(-any_of(overlap_cols)), by = "HHIDPN") %>%
+  arrange(HHIDPN, WAVE_NUMBER)
+
+rm(rlong, hlong, rwide)
+```
+
+```{r}
+#  Sample code to select 1000 random rows from the raw data and save as a new RDS file for testing and sharing within the class repository.
 set.seed(123) 
-hrs_sample_100 <- hrs_raw %>%
-  slice_sample(n = 100)
+hrs_sample <- hrs_long %>%
+  slice_sample(n = 1000)
 
 # 3. save to processed-data 
-saveRDS(hrs_sample_100, here("data", "processed-data", "randhrs_sample_100.rds"))
+saveRDS(hrs_sample, here("data", "processed-data", "randhrs_sample_1000.rds"))
 ```
 
 
 # Check data 
-First we can look at the data. At this point, the data is wide and we will need to reshape it to long format for analysis, but we can still check the data in its current form. We can find there are different waves of data collection, and each wave has a set of variables (including 16waves from 1992-2022 ). For example, the first wave (1992) has variables like r1bmi, r1age, r1sex, etc., and the second wave (1994) has variables like r2bmi, r2age, r2sex, etc. We can also see that there are some missing values in the data.
+First we can look at the data. For the main HRS data, we have 280,343 observations about 42405 unique individuals (HHIDPN) across 16 waves. The large number of observations is due to the longitudinal structure of HRS, where each person can have multiple rows corresponding to different survey waves. 
 
 ```{r}
-glimpse(hrs_sample_100)
-head(hrs_sample_100)
+glimpse(hrs_long)
+head(hrs_long)
+hrs_long %>% 
+  summarise(total_people = n_distinct(HHIDPN))
 ```
 
+```{r}
+glimpse(lange_weir_raw)
+head(lange_weir_raw)
+```
 
 # Cleaning
 
 Next, follow the following steps to process the data:
 
-1. reshape the data from wide to long format, so that each row represents a person-wave observation.
+1. Reshape the data of lange_weir from wide to long format.
 ```{r}
-d1 <- rawdata %>% dplyr::filter( Height != "sixty" ) %>% 
-                  dplyr::mutate(Height = as.numeric(Height))
-skimr::skim(d1)
-hist(d1$Height)
+# Variable stubs (without year suffix)
+cog_stubs <- c("bwc20_imp", "cogfunction", "cogivewmode", "cogtot27_imp",
+               "dlrc_imp", "fbwc20_imp", "fdlrc_imp", "fimparate_imp",
+               "fimrc_imp", "fmemoryp_imp", "fnumiadl_imp", "fser7_imp",
+               "imparate_imp", "imrc_imp", "interview",
+               "memoryp_imp", "numiadl_imp", "proxy", "prxyscore_imp", "ser7_imp")    
+
+# reshape lange weir data from wide to long format
+lange_weir_long <- lange_weir_raw %>%
+  pivot_longer(
+    cols = matches(paste0(cog_stubs, collapse = "|")),
+    names_to = c(".value", "studyyr"),
+    names_pattern = paste0("^(", paste(cog_stubs, collapse = "|"), ")(\\d{4})$")
+  ) %>%
+  mutate(studyyr = as.integer(studyyr)) %>%
+  # Keep only those interviewed in that wave (same as SAS/Stata code)
+  filter(interview == 1) %>%
+  arrange(hhid, pn, studyyr)
+```
+
+2. Merge the lange weir data with the main HRS data. Before merging, we need to make sure that the key variables for merging (HHIDPN and studyyr) are in the same format in both datasets. In the main HRS data, we have HHIDPN and STUDYYR variables, while in the lange weir data, we have hhid, pn, and studyyr. And we should limit the year from 1996 to 2020 to match the waves in the main HRS data to make sure consistency.  
+We will merge them by person (HHIDPN) and year.
+```{r}
+# limit the year from 1996 to 2020 to match the waves in the two datasets
+# Remove .y columns (keep .x as primary)
+hrs_long_filtered <- hrs_long %>%
+  filter(STUDYYR >= 1996 & STUDYYR <= 2020)
+lange_weir_filtered <- lange_weir_long %>%
+  filter(studyyr >= 1996 & studyyr <= 2020)
+```
+```{r}
+# creat HHIDPN variable in lange weir data 
+lange_weir_filtered <- lange_weir_filtered %>%
+  mutate(HHIDPN = as.numeric(paste0(hhid, pn)),
+         STUDYYR = studyyr) %>%   # Rename to match HRS column name
+  select(-hhid, -pn, -studyyr)    # Drop old ID columns
+```
+```{r}
+# merge the two datasets
+hrs_cog <- hrs_long_filtered %>%
+  left_join(lange_weir_filtered, by = c("HHIDPN", "STUDYYR"))
+```
+
+3. Select the variables needed for the analysis.
+```{r}
+# ── Select only variables needed based on codebook ────────────────────────
+hrs_cog_clean <- hrs_cog %>%
+  select(
+    # Key ID and wave variables
+    HHIDPN, STUDYYR, WAVE_NUMBER,
+    # Time-invariant demographics (from rwide)
+    RABYEAR,       # Birth year
+    RARACEM,       # Race
+    RAHISPAN,      # Ethnicity
+    RAEDUC,        # Education
+    RAGENDER,      # Gender
+    RAWTSAMP,      # Sampling weight
+   
+   # Respondent wave-varying health variables (from rlong)
+    R_MSTAT,       # Marital status
+    R_BMI,         # BMI (self-reported)
+    R_PMBMI,       # BMI (physically measured, 2006-2018)
+    R_HIBP,        # Hypertension
+    R_DIAB,        # Diabetes
+    R_CANCR,       # Cancer
+    R_LUNG,        # Chronic lung disease
+    R_HEART,       # Heart disease
+    R_STROK,       # Stroke
+    R_DEPRES,      # Depression (CESD)
+    R_SMOKEV,      # Ever smoked
+    R_SMOKEN,      # Smokes now
+    R_DRINKD,      # Days/week drinks (1996-2020)
+    R_DRINKN,      # Drinks/day
+    R_LBRF,        # Labor force status
+    R_HIGOV,       # Covered by government health plan
+    R_GOVMR,       # Medicare
+    R_GOVMD,       # Medicaid
+    R_GOVVA,       # Champus/VA
+    R_GOVOT,       # Other government plan
+    R_PRPCNT,      # Number of private health insurance plans
+    R_COVR,        # Covered by employer health insurance
+    R_COVS,        # Covered by spouse employer health insurance
+    R_HIOTHP,      # Other health insurance
+    R_HILTC,       # Long-term care insurance
+    
+    # Household wave-varying variables (from hlong)
+    H_HHRES,       # Number of people in household
+    H_ATOTB,       # Net total wealth
+    H_ITOT,        # Total household income
+
+    # Cognitive variables (from lange-weir)
+    cogfunction,   # Outcome: cognition category (1=Normal, 2=CIND, 3=Demented)
+    cogtot27_imp,  # 27-point cognitive total score
+    cogivewmode,   # Interview mode
+    proxy,         # Proxy respondent type
+    imrc_imp,      # Immediate word recall
+    dlrc_imp,      # Delayed word recall
+    ser7_imp,      # Serial 7s
+    bwc20_imp,     # Backwards count
+  )
+```
+
+4. Check missing values for each variable and create some new variables based on the existing ones. 
+```{r}
+# Check missing values for each variable
+missing_summary <- hrs_cog_clean %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), 
+               names_to = "variable", 
+               values_to = "n_missing") %>%
+  mutate(pct_missing = round(n_missing / nrow(hrs_cog_clean) * 100, 1)) %>%
+  arrange(desc(pct_missing))
+```
+
+```{r}
+# Delete variables with more than 50% missing values and recode chronic condition variables to binary (1=Yes, 0=No/other), then count number of chronic conditions.
+hrs_cog_clean <- hrs_cog_clean %>%
+  select(-c(R_GOVOT, R_PMBMI, RAWTSAMP, cogivewmode)) %>%
+  # Recode chronic condition variables
+  mutate(across(c(R_HIBP, R_DIAB, R_CANCR, R_LUNG, R_HEART, R_STROK),
+                ~ case_when(. %in% c(1, 3) ~ 1,   # Yes or disputed but has condition
+                            . %in% c(0, 4) ~ 0,   # No or disputed but no condition
+                            . == 5         ~ NA_real_,  # Unknown
+                            . == 6         ~ NA_real_,  # Undefined code → treat as NA
+                            TRUE           ~ NA_real_), # Other missing codes
+                .names = "{.col}_bin")) %>%
+  # Count number of chronic conditions
+  mutate(chronic_n = rowSums(select(., ends_with("_bin")), na.rm = TRUE))
+```
+
+```{r}
+# Create HAS_ANY_INSURANCE variable (0/1/NA)
+# 1 = has any insurance (Medicare, Medicaid, VA, or any private plan)
+# 0 = confirmed no insurance
+# NA = all insurance variables are missing
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    has_ins = case_when(
+      R_GOVMR == 1 | R_GOVMD == 1 |
+      R_GOVVA == 1 |
+      (R_PRPCNT >= 1 & !is.na(R_PRPCNT))        ~ 1,         # Confirmed has insurance
+      is.na(R_GOVMR) & is.na(R_GOVMD) &
+      is.na(R_GOVVA) & is.na(R_PRPCNT)           ~ NA_real_,  # All missing → NA
+      TRUE                                        ~ 0          # Confirmed no insurance
+    )
+  )
+
+# Check distribution
+table(hrs_cog_clean$has_ins, useNA = "always")
+
+# Create age variable at time of interview and filter to HRS target population (50+)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(age = STUDYYR - RABYEAR) %>%
+  filter(age >= 50)
+
+# Check distribution
+summary(hrs_cog_clean$age)
+```
+
+```{r}
+
 ```
 
 
-2. select the relevant variables for analysis
 
 
 
-Now we see that there is one person with a height of 6. That could be a typo, or someone mistakenly entered their height in feet. We assume that we know it was a mistaken entry as feet and convert to centimeters. Depending on your knowledge of the data, you might instead want to remove this person.
 
-```{r}
-d2 <- d1 %>% dplyr::mutate( Height = replace(Height, Height=="6",round(6*30.48,0)) )
-skimr::skim(d2)
-```
 
-Height values seem ok now.
 
-Now let's look at the `Weight` variable. There is a person with weight of 7000, which is impossible, and one person with missing weight.
-To be able to analyze the data, we'll remove those individuals as well.
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 d3 <- d2 %>%  dplyr::filter(Weight != 7000) %>% tidyr::drop_na()

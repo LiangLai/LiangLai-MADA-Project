@@ -39,3 +39,7 @@ results/large-files/*
 
 # Ignore raw data files (HRS / RAND HRS)
 data/raw-data/randhrs1992_2022v1.dta
+data/raw-data/cogfinalimp_9522wide.dta
+data/raw-data/hlong_table.sas7bdat
+data/raw-data/rlong_table.sas7bdat
+data/raw-data/rwide_table.sas7bdat
