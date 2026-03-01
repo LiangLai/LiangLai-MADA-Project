@@ -185,7 +185,7 @@ hrs_cog_clean <- hrs_cog %>%
   )
 ```
 
-4. Check missing values for each variable and create some new variables based on the existing ones. 
+4. Check missing values for each variable
 ```{r}
 # Check missing values for each variable
 missing_summary <- hrs_cog_clean %>%
@@ -195,124 +195,228 @@ missing_summary <- hrs_cog_clean %>%
                values_to = "n_missing") %>%
   mutate(pct_missing = round(n_missing / nrow(hrs_cog_clean) * 100, 1)) %>%
   arrange(desc(pct_missing))
-```
-
-```{r}
-# Delete variables with more than 50% missing values and recode chronic condition variables to binary (1=Yes, 0=No/other), then count number of chronic conditions.
+print(missing_summary)
+# Delete variables with more than 50% missing values 
 hrs_cog_clean <- hrs_cog_clean %>%
-  select(-c(R_GOVOT, R_PMBMI, RAWTSAMP, cogivewmode)) %>%
-  # Recode chronic condition variables
-  mutate(across(c(R_HIBP, R_DIAB, R_CANCR, R_LUNG, R_HEART, R_STROK),
-                ~ case_when(. %in% c(1, 3) ~ 1,   # Yes or disputed but has condition
-                            . %in% c(0, 4) ~ 0,   # No or disputed but no condition
-                            . == 5         ~ NA_real_,  # Unknown
-                            . == 6         ~ NA_real_,  # Undefined code → treat as NA
-                            TRUE           ~ NA_real_), # Other missing codes
-                .names = "{.col}_bin")) %>%
-  # Count number of chronic conditions
-  mutate(chronic_n = rowSums(select(., ends_with("_bin")), na.rm = TRUE))
+  select(-c(R_GOVOT, R_PMBMI, RAWTSAMP, cogivewmode)) 
 ```
 
+5. Create some new variables and recode some variables based on the codebook and variable distributions. 
 ```{r}
 # Create HAS_ANY_INSURANCE variable (0/1/NA)
-# 1 = has any insurance (Medicare, Medicaid, VA, or any private plan)
-# 0 = confirmed no insurance
+# 1 = has any insurance (Medicare, Medicaid, VA, or any private plan), 0 = no insurance
 # NA = all insurance variables are missing
 hrs_cog_clean <- hrs_cog_clean %>%
   mutate(
-    has_ins = case_when(
+    HAS_INS = case_when(
       R_GOVMR == 1 | R_GOVMD == 1 |
       R_GOVVA == 1 |
       (R_PRPCNT >= 1 & !is.na(R_PRPCNT))        ~ 1,         # Confirmed has insurance
       is.na(R_GOVMR) & is.na(R_GOVMD) &
       is.na(R_GOVVA) & is.na(R_PRPCNT)           ~ NA_real_,  # All missing → NA
       TRUE                                        ~ 0          # Confirmed no insurance
-    )
-  )
+    ) %>%
+    factor(levels = 0:1,
+           labels = c("No insurance", "Has insurance"))
+  ) %>%
+  # Recode chronic condition variables and recode chronic condition variables to binary (1=Yes, 0=No/other), then count number of chronic conditions.
+  mutate(across(c(R_HIBP, R_DIAB, R_CANCR, R_LUNG, R_HEART, R_STROK),
+                ~ case_when(. %in% c(1, 3, 6) ~ 1,   # Yes or disputed but has condition
+                            . %in% c(0, 4) ~ 0,   # No or disputed but no condition
+                            . == 5         ~ NA_real_,  # Unknown 
+                            TRUE           ~ NA_real_), # Other missing codes
+                .names = "{.col}_bin")) %>%
+  # Count number of chronic conditions
+  mutate(CHRONIC_N = rowSums(select(., ends_with("_bin")), na.rm = TRUE))
 
 # Check distribution
-table(hrs_cog_clean$has_ins, useNA = "always")
+table(hrs_cog_clean$HAS_INS, useNA = "always")
 
 # Create age variable at time of interview and filter to HRS target population (50+)
 hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(age = STUDYYR - RABYEAR) %>%
-  filter(age >= 50)
+  mutate(AGE = STUDYYR - RABYEAR) %>%
+  filter(AGE >= 50)
 
 # Check distribution
-summary(hrs_cog_clean$age)
+summary(hrs_cog_clean$AGE)
 ```
 
 ```{r}
+# Create RACE_ETH3 variable (Race/Ethnicity 3 categories)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    RACE_ETH3 = case_when(
+      RAHISPAN == 0 & RARACEM == 1 ~ 1,  # Non-Hispanic White
+      RAHISPAN == 0 & RARACEM == 2 ~ 2,  # Non-Hispanic Black
+      RAHISPAN == 0 & RARACEM == 3 ~ 3,  # Hispanic or Other
+      RAHISPAN == 1                ~ 3,  # Hispanic or Other
+      TRUE                         ~ NA_real_
+    ) %>%
+    factor(levels = 1:3, 
+           labels = c("Non-Hispanic White", "Non-Hispanic Black", "Hispanic or Other"))
+  )
 
+# Check distribution
+table(hrs_cog_clean$RACE_ETH3, useNA = "always")
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ```{r}
-d3 <- d2 %>%  dplyr::filter(Weight != 7000) %>% tidyr::drop_na()
-skimr::skim(d3)
-```
+# Recode RAEDUC: merge category 5 into 4 (College and above)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    RAEDUC = case_when(
+      RAEDUC %in% c(4, 5) ~ 4,  # Merge "Some college" and "College and above" into "College or above"
+      TRUE                ~ RAEDUC
+    ) %>%
+    factor(levels = 1:4,
+           labels = c("Less than high school", "GED", 
+                      "High school graduate", "College or above"))
+  )
 
-Now checking the `Gender` variable. Gender should be a categorical/factor variable but is loaded as character. We can fix that with simple base R code to mix things up.
+# Check distribution
+table(hrs_cog_clean$RAEDUC, useNA = "always")
+```
 
 ```{r}
-d3$Gender <- as.factor(d3$Gender)  
-skimr::skim(d3)
+# Create SMOKESTATUS variable based on R_SMOKEV: 0=Never smoker, 1=Ever/Current smoker, NA=Missing/Unknown 
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    SMOKESTATUS = case_when(
+      R_SMOKEV == 0 ~ 0,  # Never smoker
+      R_SMOKEV == 1 ~ 1,  # Ever/Current smoker
+      TRUE          ~ NA_real_
+    ) %>%
+    factor(levels = 0:1, labels = c("Never smoker", "Ever/Current smoker"))
+  )
 ```
-
-
-Now we see that there is another NA, but it's not `NA` from R, instead it was loaded as character and is now considered as a category.
-We'll proceed here by removing that individual with that NA entry. Since this keeps an empty category for Gender, I'm also using droplevels() to get rid of it.
 
 ```{r}
-d4 <- d3 %>% dplyr::filter( !(Gender %in% c("NA","N")) ) %>% droplevels()
-skimr::skim(d4)
+# Create EMP_STATUS variable (Employment status)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    EMP_STATUS = case_when(
+      R_LBRF %in% c(1, 2) ~ 1,  # Employed (FT/PT)
+      R_LBRF %in% c(3, 7) ~ 2,  # Unemployed/Not in labor force
+      R_LBRF %in% c(4, 5) ~ 3,  # Retired
+      R_LBRF == 6          ~ 4,  # Disabled
+      TRUE                 ~ NA_real_
+    ) %>%
+    factor(levels = 1:4,
+           labels = c("Employed (FT/PT)", "Unemployed/Not in labor force",
+                      "Retired", "Disabled"))
+  )
+
+# Check distribution
+table(hrs_cog_clean$EMP_STATUS, useNA = "always")
 ```
-
-
-All done, data is clean now. 
-
-Let's assign at the end to some final variable, this makes it easier to add further cleaning steps above.
 
 ```{r}
-processeddata <- d4
+# Create LN_HITOT variable (Log total income + 1)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(LN_HITOT = log(H_ITOT + 1))  # Log(income + 1) 
+
+# Check distribution
+summary(hrs_cog_clean$LN_HITOT)
 ```
 
+```{r}
+# Create LN_WEALTH variable using asinh transformation
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(LN_WEALTH = asinh(H_ATOTB))
+
+# Check distribution
+summary(hrs_cog_clean$LN_WEALTH)
+```
+```{r}
+# Convert R_DEPRES to factor
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    R_DEPRES = factor(R_DEPRES,
+                      levels = 0:1,
+                      labels = c("No", "Yes"))
+  )
+
+# Check distribution
+table(hrs_cog_clean$R_DEPRES, useNA = "always")
+```
+
+```{r}
+# Create BMI_CAT variable (BMI categories)
+hrs_cog_clean <- hrs_cog_clean %>%
+  mutate(
+    BMI_CAT = case_when(
+      R_BMI < 18.5               ~ 1,  # Thin
+      R_BMI >= 18.5 & R_BMI < 25 ~ 2,  # Normal
+      R_BMI >= 25   & R_BMI < 30 ~ 3,  # Overweight
+      R_BMI >= 30                ~ 4,  # Obese
+      TRUE                       ~ NA_real_
+    ) %>%
+    factor(levels = 1:4,
+           labels = c("Thin (<18.5)", "Normal (18.5-24.9)",
+                      "Overweight (25.0-29.9)", "Obese (>=30.0)"))
+  )
+
+# Check distribution
+table(hrs_cog_clean$BMI_CAT, useNA = "always")
+```
+
+```{r}
+# Create baseline variables from 1996 wave
+baseline <- hrs_cog_clean %>%
+  filter(STUDYYR == 1996) %>%
+  select(HHIDPN,
+         BASELINE_AGE = AGE,      # Age at baseline (1996)
+         BASELINE_BMI = R_BMI)    # BMI at baseline (1996)
+
+# Merge baseline back to main dataset
+hrs_cog_clean <- hrs_cog_clean %>%
+  left_join(baseline, by = "HHIDPN") %>%
+  # Drop people with no baseline (not interviewed in 1996)
+  filter(!is.na(BASELINE_AGE) & !is.na(BASELINE_BMI))
+```
+
+
+At this point, we select only the variables needed for the regression analysis (may edit later).
+
+```{r}
+# Toupper all variable names
+hrs_cog_clean <- hrs_cog_clean %>%
+  rename_with(toupper)
+  
+# Select only variables needed for regression analysis
+hrs_cog_final <- hrs_cog_clean %>%
+  select(
+    # ID and wave variables
+    HHIDPN, STUDYYR, WAVE_NUMBER,
+    # Outcome variables
+    COGFUNCTION,    # Cognitive status (1=Normal, 2=CIND, 3=Demented)
+    COGTOT27_IMP,   # 27-point cognitive total score
+    # Main predictor
+    BMI_CAT,        # BMI categories
+    R_BMI,          # BMI continuous
+    # Covariates
+    BASELINE_AGE, 
+    BASELINE_BMI,   
+    AGE,            # Age at interview
+    RAGENDER,       # Gender
+    LN_WEALTH,      # Log household wealth
+    CHRONIC_N,      # Number of chronic conditions
+    RAEDUC,         # Education
+    RACE_ETH3,      # Race/ethnicity
+    HAS_INS,        # Health insurance
+    EMP_STATUS,     # Employment status
+    SMOKESTATUS,    # Smoking status
+    R_DEPRES,       # Depression
+    LN_HITOT        # Log total income
+  )
+```
 
 # Save data 
-
 Finally, we save the clean data as RDS file. I suggest you save your processed and cleaned data as RDS or RDA/Rdata files. 
-This preserves coding like factors, characters, numeric, etc.  If you save as CSV, that information would get lost.
-However, CSV is better for sharing with others since it's plain text. If you do CSV, you might want to write down somewhere what each variable is.
-
-See here for some suggestions on how to store your processed data:
-http://www.sthda.com/english/wiki/saving-data-into-r-data-format-rds-and-rdata
-
 ```{r}
-save_data_location <- here::here("data","processed-data","processeddata.rds")
-saveRDS(processeddata, file = save_data_location)
+saveRDS(hrs_cog_final, here("data", "processed-data", "hrs_cognition_final.rds"))
 ```
-
 
 
 # Notes
-
-Removing anyone who had "faulty" or missing data is one approach. It's often not the best. based on your question and your analysis approach, you might want to do cleaning differently (e.g. keep individuals with some missing information).
 
