@@ -418,5 +418,3 @@ saveRDS(hrs_cog_final, here("data", "processed-data", "hrs_cognition_final.rds")
 ```
 
 
-# Notes
-
