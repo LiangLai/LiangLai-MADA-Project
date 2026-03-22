@@ -12,11 +12,24 @@ library(readxl) #for loading Excel files
 library(dplyr) #for data processing/cleaning
 library(tidyr) #for data processing/cleaning
 library(skimr) #for nice visualization of data 
-library(here) #to set paths
-library(haven) # for load stata data
+library(here) 
+library(tidyverse)
+library(haven) 
 library(stringr)
+library(zoo)
 ```
 
+```{r}
+# Helper function to track sample size
+check_n <- function(data) {
+  data %>%
+    summarise(
+      n_obs = n(),
+      n_people = n_distinct(HHIDPN),
+      n_waves = n_distinct(STUDYYR)
+    )
+}
+```
 # Data loading
 Link to the HRS data: <https://hrsdata.isr.umich.edu/data-products/long-format-data-rand-hrs-longitudinal-file-2020>. 
 In this link, you can find the long format data files (rlong, hlong, rwide) that we will use for this project. You can also find the codebook and documentation for these datasets in the same link.
@@ -49,6 +62,8 @@ hrs_long <- rlong %>%
   arrange(HHIDPN, WAVE_NUMBER)
 
 rm(rlong, hlong, rwide)
+# Check sample size
+check_n(hrs_long)
 ```
 
 ```{r}
@@ -112,6 +127,8 @@ hrs_long_filtered <- hrs_long %>%
   filter(STUDYYR >= 1996 & STUDYYR <= 2020)
 lange_weir_filtered <- lange_weir_long %>%
   filter(studyyr >= 1996 & studyyr <= 2020)
+
+check_n(hrs_long_filtered)
 ```
 ```{r}
 # creat HHIDPN variable in lange weir data 
@@ -124,12 +141,13 @@ lange_weir_filtered <- lange_weir_filtered %>%
 # merge the two datasets
 hrs_cog <- hrs_long_filtered %>%
   left_join(lange_weir_filtered, by = c("HHIDPN", "STUDYYR"))
+check_n(hrs_cog)
 ```
 
 3. Select the variables needed for the analysis.
 ```{r}
 # ── Select only variables needed based on codebook ────────────────────────
-hrs_cog_clean <- hrs_cog %>%
+hrs_cog_vars <- hrs_cog %>%
   select(
     # Key ID and wave variables
     HHIDPN, STUDYYR, WAVE_NUMBER,
@@ -183,238 +201,377 @@ hrs_cog_clean <- hrs_cog %>%
     ser7_imp,      # Serial 7s
     bwc20_imp,     # Backwards count
   )
+
+check_n(hrs_cog_vars)
 ```
 
 4. Check missing values for each variable
 ```{r}
 # Check missing values for each variable
-missing_summary <- hrs_cog_clean %>%
+missing_summary <- hrs_cog_vars %>%
   summarise(across(everything(), ~ sum(is.na(.)))) %>%
   pivot_longer(everything(), 
                names_to = "variable", 
                values_to = "n_missing") %>%
-  mutate(pct_missing = round(n_missing / nrow(hrs_cog_clean) * 100, 1)) %>%
+  mutate(pct_missing = round(n_missing / nrow(hrs_cog_vars) * 100, 1)) %>%
   arrange(desc(pct_missing))
 print(missing_summary)
 # Delete variables with more than 50% missing values 
-hrs_cog_clean <- hrs_cog_clean %>%
+hrs_cog_miss <- hrs_cog_vars %>%
   select(-c(R_GOVOT, R_PMBMI, RAWTSAMP, cogivewmode)) 
 ```
 
-5. Create some new variables and recode some variables based on the codebook and variable distributions. 
+5. Create demographic, socioeconomic, health, and BMI-related covariates. 
+
 ```{r}
-# Create HAS_ANY_INSURANCE variable (0/1/NA)
-# 1 = has any insurance (Medicare, Medicaid, VA, or any private plan), 0 = no insurance
-# NA = all insurance variables are missing
-hrs_cog_clean <- hrs_cog_clean %>%
+hrs_cog_cov <- hrs_cog_miss %>%
   mutate(
+    # Age at interview
+    AGE = STUDYYR - RABYEAR,
+
+    # Create HAS_ANY_INSURANCE variable (0/1/NA)
+    # 1 = has any insurance (Medicare, Medicaid, VA, or any private plan), 0 = no insurance
+    # NA = all insurance variables are missing
     HAS_INS = case_when(
-      R_GOVMR == 1 | R_GOVMD == 1 |
-      R_GOVVA == 1 |
-      (R_PRPCNT >= 1 & !is.na(R_PRPCNT))        ~ 1,         # Confirmed has insurance
-      is.na(R_GOVMR) & is.na(R_GOVMD) &
-      is.na(R_GOVVA) & is.na(R_PRPCNT)           ~ NA_real_,  # All missing → NA
-      TRUE                                        ~ 0          # Confirmed no insurance
+      R_GOVMR == 1 | R_GOVMD == 1 | R_GOVVA == 1 |
+        (R_PRPCNT >= 1 & !is.na(R_PRPCNT)) ~ 1,
+      is.na(R_GOVMR) & is.na(R_GOVMD) & is.na(R_GOVVA) & is.na(R_PRPCNT) ~ NA_real_,
+      TRUE ~ 0
     ) %>%
-    factor(levels = 0:1,
-           labels = c("No insurance", "Has insurance"))
-  ) %>%
-  # Recode chronic condition variables and recode chronic condition variables to binary (1=Yes, 0=No/other), then count number of chronic conditions.
-  mutate(across(c(R_HIBP, R_DIAB, R_CANCR, R_LUNG, R_HEART, R_STROK),
-                ~ case_when(. %in% c(1, 3, 6) ~ 1,   # Yes or disputed but has condition
-                            . %in% c(0, 4) ~ 0,   # No or disputed but no condition
-                            . == 5         ~ NA_real_,  # Unknown 
-                            TRUE           ~ NA_real_), # Other missing codes
-                .names = "{.col}_bin")) %>%
-  # Count number of chronic conditions
-  mutate(CHRONIC_N = rowSums(select(., ends_with("_bin")), na.rm = TRUE))
+      factor(levels = 0:1, labels = c("No insurance", "Has insurance")),
 
-# Check distribution
-table(hrs_cog_clean$HAS_INS, useNA = "always")
-
-# Create age variable at time of interview and filter to HRS target population (50+)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(AGE = STUDYYR - RABYEAR) %>%
-  filter(AGE >= 50)
-
-# Check distribution
-summary(hrs_cog_clean$AGE)
-```
-
-```{r}
-# Create RACE_ETH3 variable (Race/Ethnicity 3 categories)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
+    # Race/ethnicity 3 categories: Non-Hispanic White, Non-Hispanic Black, Hispanic or Other
     RACE_ETH3 = case_when(
-      RAHISPAN == 0 & RARACEM == 1 ~ 1,  # Non-Hispanic White
-      RAHISPAN == 0 & RARACEM == 2 ~ 2,  # Non-Hispanic Black
-      RAHISPAN == 0 & RARACEM == 3 ~ 3,  # Hispanic or Other
-      RAHISPAN == 1                ~ 3,  # Hispanic or Other
-      TRUE                         ~ NA_real_
+      RAHISPAN == 0 & RARACEM == 1 ~ 1,
+      RAHISPAN == 0 & RARACEM == 2 ~ 2,
+      RAHISPAN == 0 & RARACEM == 3 ~ 3,
+      RAHISPAN == 1 ~ 3,
+      TRUE ~ NA_real_
     ) %>%
-    factor(levels = 1:3, 
-           labels = c("Non-Hispanic White", "Non-Hispanic Black", "Hispanic or Other"))
-  )
+      factor(
+        levels = 1:3,
+        labels = c("Non-Hispanic White", "Non-Hispanic Black", "Hispanic or Other")
+      ),
 
-# Check distribution
-table(hrs_cog_clean$RACE_ETH3, useNA = "always")
-```
-
-```{r}
-# Recode RAEDUC: merge category 5 into 4 (College and above)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
+    # Education categories: Less than high school, GED, High school graduate, College or above (merge some categories based on distribution and codebook)
     RAEDUC = case_when(
-      RAEDUC %in% c(4, 5) ~ 4,  # Merge "Some college" and "College and above" into "College or above"
-      TRUE                ~ RAEDUC
+      RAEDUC %in% c(4, 5) ~ 4,
+      TRUE ~ RAEDUC
     ) %>%
-    factor(levels = 1:4,
-           labels = c("Less than high school", "GED", 
-                      "High school graduate", "College or above"))
-  )
+      factor(
+        levels = 1:4,
+        labels = c("Less than high school", "GED", "High school graduate", "College or above")
+      ),
+      
+    # Gender
+    RAGENDER = factor(RAGENDER, levels = 1:2, labels = c("Male", "Female")),
 
-# Check distribution
-table(hrs_cog_clean$RAEDUC, useNA = "always")
-```
-
-```{r}
-# Create SMOKESTATUS variable based on R_SMOKEV: 0=Never smoker, 1=Ever/Current smoker, NA=Missing/Unknown 
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
+    # Smoking status: Never smoker, Ever/Current smoker, NA=Missing/Unknown
     SMOKESTATUS = case_when(
-      R_SMOKEV == 0 ~ 0,  # Never smoker
-      R_SMOKEV == 1 ~ 1,  # Ever/Current smoker
-      TRUE          ~ NA_real_
+      R_SMOKEV == 0 ~ 0,
+      R_SMOKEV == 1 ~ 1,
+      TRUE ~ NA_real_
     ) %>%
-    factor(levels = 0:1, labels = c("Never smoker", "Ever/Current smoker"))
-  )
-```
+      factor(levels = 0:1, labels = c("Never smoker", "Ever/Current smoker")),
 
-```{r}
-# Create EMP_STATUS variable (Employment status)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
+    # Employment status: Employed (FT/PT), Unemployed/Not in labor force, Retired, Disabled
     EMP_STATUS = case_when(
-      R_LBRF %in% c(1, 2) ~ 1,  # Employed (FT/PT)
-      R_LBRF %in% c(3, 7) ~ 2,  # Unemployed/Not in labor force
-      R_LBRF %in% c(4, 5) ~ 3,  # Retired
-      R_LBRF == 6          ~ 4,  # Disabled
-      TRUE                 ~ NA_real_
+      R_LBRF %in% c(1, 2) ~ 1,
+      R_LBRF %in% c(3, 7) ~ 2,
+      R_LBRF %in% c(4, 5) ~ 3,
+      R_LBRF == 6 ~ 4,
+      TRUE ~ NA_real_
     ) %>%
-    factor(levels = 1:4,
-           labels = c("Employed (FT/PT)", "Unemployed/Not in labor force",
-                      "Retired", "Disabled"))
-  )
+      factor(
+        levels = 1:4,
+        labels = c("Employed (FT/PT)", "Unemployed/Not in labor force", "Retired", "Disabled")
+      ),
 
-# Check distribution
-table(hrs_cog_clean$EMP_STATUS, useNA = "always")
-```
+    # Income and wealth variables: Log transform total income and wealth to reduce skewness
+    LN_HITOT = log(H_ITOT + 1),
+    LN_WEALTH = asinh(H_ATOTB),
 
-```{r}
-# Create LN_HITOT variable (Log total income + 1)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(LN_HITOT = log(H_ITOT + 1))  # Log(income + 1) 
+    # Depression: Recode R_DEPRES to factor with labels
+    R_DEPRES = factor(R_DEPRES, levels = 0:1, labels = c("No", "Yes")),
 
-# Check distribution
-summary(hrs_cog_clean$LN_HITOT)
-```
-
-```{r}
-# Create LN_WEALTH variable using asinh transformation
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(LN_WEALTH = asinh(H_ATOTB))
-
-# Check distribution
-summary(hrs_cog_clean$LN_WEALTH)
-```
-```{r}
-# Convert R_DEPRES to factor
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
-    R_DEPRES = factor(R_DEPRES,
-                      levels = 0:1,
-                      labels = c("No", "Yes"))
-  )
-
-# Check distribution
-table(hrs_cog_clean$R_DEPRES, useNA = "always")
-```
-
-```{r}
-# Create BMI_CAT variable (BMI categories)
-hrs_cog_clean <- hrs_cog_clean %>%
-  mutate(
+    # Cognition outcome: convert to factor
+    cogfunction = factor(cogfunction,
+                         levels = 1:3,
+                         labels = c("Normal", "CIND", "Demented")),
+    # BMI category based on R_BMI: Thin (<18.5), Normal (18.5-24.9), Overweight (25.0-29.9), Obese (>=30.0)
     BMI_CAT = case_when(
-      R_BMI < 18.5               ~ 1,  # Thin
-      R_BMI >= 18.5 & R_BMI < 25 ~ 2,  # Normal
-      R_BMI >= 25   & R_BMI < 30 ~ 3,  # Overweight
-      R_BMI >= 30                ~ 4,  # Obese
-      TRUE                       ~ NA_real_
+      R_BMI < 18.5 ~ 1,
+      R_BMI >= 18.5 & R_BMI < 25 ~ 2,
+      R_BMI >= 25 & R_BMI < 30 ~ 3,
+      R_BMI >= 30 ~ 4,
+      TRUE ~ NA_real_
     ) %>%
-    factor(levels = 1:4,
-           labels = c("Thin (<18.5)", "Normal (18.5-24.9)",
-                      "Overweight (25.0-29.9)", "Obese (>=30.0)"))
+      factor(
+        levels = 1:4,
+        labels = c("Thin (<18.5)", "Normal (18.5-24.9)", "Overweight (25.0-29.9)", "Obese (>=30.0)")
+      )
+  ) %>%
+  mutate(
+  # Recode chronic condition variables to binary (1=Yes, 0=No/other), then count number of chronic conditions.
+    across(
+      c(R_HIBP, R_DIAB, R_CANCR, R_LUNG, R_HEART, R_STROK),
+      ~ case_when(
+        . %in% c(1, 3, 6) ~ 1,
+        . %in% c(0, 4) ~ 0,
+        . == 5 ~ NA_real_,
+        TRUE ~ NA_real_
+      ),
+      .names = "{.col}_bin"
+    )
+  ) %>%
+  mutate(
+    CHRONIC_N = rowSums(select(., ends_with("_bin")), na.rm = TRUE)
   )
 
-# Check distribution
-table(hrs_cog_clean$BMI_CAT, useNA = "always")
 ```
+
+6. Create baseline covariates from the 1996 wave and merge them back to the person-wave data.
 
 ```{r}
-# Create baseline variables from 1996 wave
-baseline <- hrs_cog_clean %>%
+baseline_1996 <- hrs_cog_cov %>%
   filter(STUDYYR == 1996) %>%
-  select(HHIDPN,
-         BASELINE_AGE = AGE,      # Age at baseline (1996)
-         BASELINE_BMI = R_BMI)    # BMI at baseline (1996)
+  transmute(
+    HHIDPN,
+    BASELINE_AGE = AGE,
+    BASELINE_BMI = R_BMI,
+    BASELINE_BMI_CAT = BMI_CAT
+  )
+hrs_cog_base <- hrs_cog_cov %>%
+  left_join(baseline_1996, by = "HHIDPN")
+```
+7. Restrict to the Baseline-Eligible Cohort
+```{r}
+# Restrict to respondents with valid baseline information and age 50+ at baseline
+hrs_base_cohort <- hrs_cog_base %>%
+  filter(
+    !is.na(BASELINE_AGE),
+    !is.na(BASELINE_BMI),
+    BASELINE_AGE >= 50
+  )
 
-# Merge baseline back to main dataset
-hrs_cog_clean <- hrs_cog_clean %>%
-  left_join(baseline, by = "HHIDPN") %>%
-  # Drop people with no baseline (not interviewed in 1996)
-  filter(!is.na(BASELINE_AGE) & !is.na(BASELINE_BMI))
+check_n(hrs_base_cohort)
 ```
 
-
+# Select Final Variables for the Clean Longitudinal Master File
 At this point, we select only the variables needed for the regression analysis (may edit later).
 
 ```{r}
-# Toupper all variable names
-hrs_cog_clean <- hrs_cog_clean %>%
-  rename_with(toupper)
-  
-# Select only variables needed for regression analysis
-hrs_cog_final <- hrs_cog_clean %>%
+hrs_long_clean <- hrs_base_cohort %>%
+  rename_with(toupper) %>%
   select(
-    # ID and wave variables
     HHIDPN, STUDYYR, WAVE_NUMBER,
-    # Outcome variables
-    COGFUNCTION,    # Cognitive status (1=Normal, 2=CIND, 3=Demented)
-    COGTOT27_IMP,   # 27-point cognitive total score
-    # Main predictor
-    BMI_CAT,        # BMI categories
-    R_BMI,          # BMI continuous
-    # Covariates
-    BASELINE_AGE, 
-    BASELINE_BMI,   
-    AGE,            # Age at interview
-    RAGENDER,       # Gender
-    LN_WEALTH,      # Log household wealth
-    CHRONIC_N,      # Number of chronic conditions
-    RAEDUC,         # Education
-    RACE_ETH3,      # Race/ethnicity
-    HAS_INS,        # Health insurance
-    EMP_STATUS,     # Employment status
-    SMOKESTATUS,    # Smoking status
-    R_DEPRES,       # Depression
-    LN_HITOT        # Log total income
+
+    # Cognition outcomes
+    COGFUNCTION,
+    COGTOT27_IMP,
+
+    # BMI variables
+    R_BMI,
+    BMI_CAT,
+    BASELINE_AGE,
+    BASELINE_BMI,
+    BASELINE_BMI_CAT,
+    AGE,
+
+    # Demographic and socioeconomic covariates
+    RAGENDER,
+    RACE_ETH3,
+    RAEDUC,
+    LN_WEALTH,
+    LN_HITOT,
+
+    # Health-related covariates
+    CHRONIC_N,
+    HAS_INS,
+    EMP_STATUS,
+    SMOKESTATUS,
+    R_DEPRES
   )
+
+check_n(hrs_long_clean)
 ```
 
-# Save data 
-Finally, we save the clean data as RDS file. I suggest you save your processed and cleaned data as RDS or RDA/Rdata files. 
+
+# Create exposure variable
+We create BMI varibility and mean BMI across waves for each person, and categorize BMI variability into tertiles based on the wave 9(the longest follow-up wave). 
+
 ```{r}
-saveRDS(hrs_cog_final, here("data", "processed-data", "hrs_cognition_final.rds"))
+# impute BMI for each person using linear interpolation across waves.  
+hrs_long_clean <- hrs_long_clean %>%
+  group_by(HHIDPN) %>%
+  arrange(HHIDPN, STUDYYR) %>%
+  mutate(
+    R_BMI_IMP = na.approx(R_BMI, 
+                                x = STUDYYR,      # Use study year as x-axis
+                                na.rm = FALSE,    # Keep NA if cannot interpolate (e.g. at edges)
+                                rule = 2)         # rule=2: extrapolate at edges using nearest value
+  ) %>%
+  ungroup()
+
+hrs_long_clean <- hrs_long_clean %>%
+  group_by(HHIDPN) %>%
+  filter(!any(is.na(R_BMI_IMP))) %>%
+  ungroup()
+check_n(hrs_long_clean)
 ```
+
+
+```{r}
+# Define wave windows (starting from 1996)
+wave_years <- list(
+  w3 = c(1996, 1998, 2000),
+  w4 = c(1996, 1998, 2000, 2002),
+  w5 = c(1996, 1998, 2000, 2002, 2004),
+  w6 = c(1996, 1998, 2000, 2002, 2004, 2006),
+  w7 = c(1996, 1998, 2000, 2002, 2004, 2006, 2008),
+  w8 = c(1996, 1998, 2000, 2002, 2004, 2006, 2008, 2010),
+  w9 = c(1996, 1998, 2000, 2002, 2004, 2006, 2008, 2010, 2012)
+)
+
+# Calculate BMI variability for each wave window using imputed BMI
+bmi_variability_list <- list()
+
+for (w in names(wave_years)) {
+  years <- wave_years[[w]]
+  
+  bmi_variability_list[[w]] <- hrs_long_clean %>%
+    filter(STUDYYR %in% years) %>%
+    group_by(HHIDPN) %>%
+    arrange(HHIDPN, STUDYYR) %>%
+    summarise(
+      n_obs    = sum(!is.na(R_BMI_IMP)),
+      BMI_MEAN = mean(R_BMI_IMP, na.rm = TRUE),
+      BMI_SD   = sd(R_BMI_IMP, na.rm = TRUE),
+      BMI_CV   = BMI_SD / BMI_MEAN * 100,
+      BMI_ARV  = mean(abs(diff(R_BMI_IMP[!is.na(R_BMI_IMP)])), na.rm = TRUE),
+      .groups  = "drop"
+    ) %>%
+    rename_with(~ paste0(., "_", toupper(w)), -HHIDPN)
+}
+
+# Merge all wave windows into one wide table
+bmi_variability <- bmi_variability_list %>%
+  reduce(full_join, by = "HHIDPN")
+
+# Create BMIV_CAT for each wave window based on W9 tertile cutpoints
+w9_tertile_breaks <- quantile(bmi_variability$BMI_CV_W9,
+                              probs = c(0, 1/3, 2/3, 1),
+                              na.rm = TRUE)
+
+cat("W9 tertile cutpoints:\n")
+print(w9_tertile_breaks)
+
+for (w in names(wave_years)) {
+  cv_col  <- paste0("BMI_CV_", toupper(w))
+  cat_col <- paste0("BMIV_CAT_", toupper(w))
+  
+  bmi_variability <- bmi_variability %>%
+    mutate(!!cat_col := cut(.data[[cv_col]],
+                            breaks = w9_tertile_breaks,
+                            labels = c("Low variability",
+                                       "Medium variability",
+                                       "High variability"),
+                            include.lowest = TRUE))
+}
+
+# Merge back to long table
+hrs_final <- hrs_long_clean %>%
+  left_join(bmi_variability, by = "HHIDPN")
+
+cat("Final dimensions:", dim(hrs_final), "\n")
+check_n(hrs_final)
+
+```
+
+# Save the cleaned and processed data for analysis
+```{r}
+saveRDS(hrs_final, here("data", "processed-data", "hrs_final_long.rds"))
+```
+
+# Create time-to-event dataset for Cox regression
+```{r}
+# Step 1: Define eligible risk set for W3
+eligible_w3 <- hrs_final %>%
+  filter(STUDYYR %in% c(1996, 1998, 2000)) %>%
+  group_by(HHIDPN) %>%
+  summarise(
+    n_waves_present   = n_distinct(STUDYYR),
+    any_cog_imp_to_lm = any(COGFUNCTION %in% c("CIND", "Demented"),
+                             na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(
+    n_waves_present == 3,   # Present in all 3 waves (1996, 1998, 2000)
+    !any_cog_imp_to_lm      # No CIND or Dementia up to landmark
+  ) %>%
+  pull(HHIDPN)
+
+cat("W3 eligible individuals:", length(eligible_w3), "\n")
+
+# Step 2: Build long survival data after landmark (2000)
+surv_w3 <- hrs_final %>%
+  filter(HHIDPN %in% eligible_w3,
+         STUDYYR >= 2000) %>%
+  arrange(HHIDPN, STUDYYR) %>%
+  group_by(HHIDPN) %>%
+  mutate(
+    tstart         = lag(STUDYYR, default = 2000),
+    tstop          = STUDYYR,
+    event_dementia = as.integer(COGFUNCTION == "Demented")
+  ) %>%
+  filter(tstart < tstop) %>%
+  # Truncate rows after first dementia event
+  filter(cumsum(lag(event_dementia, default = 0)) == 0) %>%
+  ungroup()
+
+cat("W3 survival data dimensions:", dim(surv_w3), "\n")
+
+surv_w3 %>%
+  summarise(
+    n_people   = n_distinct(HHIDPN),
+    n_rows     = n(),
+    n_events   = n_distinct(HHIDPN[event_dementia == 1]),
+    event_rate = round(n_distinct(HHIDPN[event_dementia == 1]) / 
+                       n_distinct(HHIDPN) * 100, 1)
+  ) %>%
+  print()
+
+#  Cox model
+library(survival)
+
+fit_w3 <- coxph(
+  Surv(tstart, tstop, event_dementia) ~
+    BMI_CV_W3 +
+    BASELINE_AGE + RAGENDER + RACE_ETH3 + RAEDUC +
+    LN_WEALTH + CHRONIC_N + HAS_INS +
+    EMP_STATUS + SMOKESTATUS + R_DEPRES +
+    cluster(HHIDPN),
+  data = surv_w3
+)
+
+summary(fit_w3)
+```
+
+```
+
+
+
+
+
+
+
+# Save data
+
+
+
+
+
+
+
 
 
