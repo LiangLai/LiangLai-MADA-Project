@@ -1,0 +1,35 @@
+**Characteristic**,"**N = 10,317**"
+__Age at baseline (years)__,60.0 (4.7)
+__BMI at baseline (kg/m²)__,27.3 (5.2)
+__Log household wealth__,11.2 (4.7)
+__Log total income__,10.38 (1.46)
+__Number of chronic conditions__,0.94 (1.01)
+__Gender__,NA
+Male,"4,896 (47%)"
+Female,"5,421 (53%)"
+__Race/Ethnicity__,NA
+Non-Hispanic White,"7,569 (73%)"
+Non-Hispanic Black,"1,621 (16%)"
+Hispanic or Other,"1,116 (11%)"
+__Education__,NA
+Less than high school,"2,687 (26%)"
+GED,525 (5.1%)
+High school graduate,"3,326 (32%)"
+College or above,"3,774 (37%)"
+__Health insurance__,NA
+No insurance,"1,088 (11%)"
+Has insurance,"9,177 (89%)"
+__Employment status__,NA
+Employed (FT/PT),"4,949 (48%)"
+Unemployed/Not in labor force,"1,122 (11%)"
+Retired,"3,748 (36%)"
+Disabled,498 (4.8%)
+__Smoking status__,NA
+Never smoker,"3,695 (36%)"
+Ever/Current smoker,"6,470 (64%)"
+__Depression__,"1,356 (14%)"
+__BMI category__,NA
+Thin (<18.5),124 (1.2%)
+Normal (18.5-24.9),"3,328 (32%)"
+Overweight (25.0-29.9),"4,242 (41%)"
+Obese (>=30.0),"2,623 (25%)"

@@ -86,12 +86,6 @@ We will construct BMI variability (BMIV) as the coefficient of variation (CV) of
 Sometimes you might want to show a schematic diagram/figure that was not created with code (if you can do it with code, do it). @fig-schematic is an example of some - completely random/unrelated - schematic that was generated with BioRender.
 We store those figures in the `assets` folder.
 
-```{r}
-#| label: fig-schematic
-#| fig-cap: "A figure that is manually generated and shows some overview/schematic. This has nothing to do with the data, it's just a random one from one of our projects I found and placed here."
-#| echo: FALSE
-knitr::include_graphics(here("assets","antigen-recognition.png"))
-```
 
 ## Data acquisition 
 _As applicable, explain where and how you got the data. If you directly import the data from an online source, you can combine this section with the next._

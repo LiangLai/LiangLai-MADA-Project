@@ -45,7 +45,7 @@ eligible_w3 <- hrs_final %>%
 
 cat("W3 eligible individuals:", length(eligible_w3), "\n")
 
-# Step 2: Build long survival data after landmark (2000)
+# Build long survival data after landmark (2000)
 surv_w3 <- hrs_final %>%
   filter(HHIDPN %in% eligible_w3,
          STUDYYR >= 2000) %>%
@@ -86,4 +86,4 @@ fit_w3 <- coxph(
   data = surv_w3
 )
 summary(fit_w3)
-  
+cox.zph(fit_w3)  

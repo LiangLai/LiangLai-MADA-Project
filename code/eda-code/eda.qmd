@@ -1,6 +1,6 @@
 ---
 title: "Exploratory analysis script"
-date: "2024-03-20"
+date: "2026-03-20"
 output: html_document
 ---
 
@@ -12,85 +12,215 @@ library(here) #for data loading/saving
 library(dplyr)
 library(skimr)
 library(ggplot2)
+library(scales)
 library(tidyverse)
+library(gtsummary)
 ```
-
 
 Load the data.
 ```{r}
 #load data
-hrs <- readRDS(here("data", "processed-data", "hrs_cognition_final.rds"))
+hrs_final <- readRDS(here("data", "processed-data", "hrs_final_long.rds"))
 ```
 
 # Data exploration 
+## quick summary of the data
 ```{r}
-glimpse(hrs)
-dim(hrs)
-hrs %>% summarise(
-  n_obs = n(),
-  n_people = n_distinct(HHIDPN),
-  n_waves = n_distinct(STUDYYR)
-)
+summary(hrs_final)
 ```
 
-
-
-# Data exploration through tables
-
-Showing a bit of code to produce and save a summary table.
-
-
+## P1. Sample size per wave
 ```{r}
-summary_df = skimr::skim(mydata)
-print(summary_df)
-# save to file
-summarytable_file = here("results", "tables", "summarytable.rds")
-saveRDS(summary_df, file = summarytable_file)
+# This figure shows the number of observations in each survey wave from 1996 to 2020.
+p1 <- hrs_final %>%
+  count(STUDYYR) %>%
+  ggplot(aes(x = factor(STUDYYR), y = n)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = n), vjust = -0.5, size = 3) +
+  labs(title = "Sample Size per Wave",
+       x = "Study Year", y = "Number of Observations") +
+  theme_minimal()
+print(p1)
+
+ggsave(here("results", "figures", "p1_sample_size_per_wave.png"), 
+       plot = p1, width = 8, height = 5, dpi = 300)
+```
+## P2. Cognitive function distribution by wave
+```{r}
+# Proportion of Normal, CIND, and Demented individuals at each wave. An increasing proportion of dementia over time is expected.
+cogfunction_table <- hrs_final %>%
+  filter(!is.na(COGFUNCTION)) %>%
+  count(STUDYYR, COGFUNCTION) %>%
+  group_by(STUDYYR) %>%
+  mutate(pct = round(n / sum(n) * 100, 1))
+
+p2 <- cogfunction_table %>%
+  ggplot(aes(x = factor(STUDYYR), y = pct, fill = COGFUNCTION)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Normal"   = "#2196F3",
+                               "CIND"     = "#FF9800",
+                               "Demented" = "#F44336")) +
+  labs(title = "Cognitive Function Distribution by Wave",
+       x = "Study Year", y = "Percentage (%)",
+       fill = "Cognitive Status") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(here("results", "figures", "p2_cogfunction_by_wave.png"),
+       plot = p2, width = 10, height = 6, dpi = 300)
 ```
 
-We are saving the results to the `results` folder. Depending on how many tables/figures you have, it might make sense to have separate folders for each. And/or you could have separate folders for exploratory tables/figures and for final tables/figures. Just choose a setup that makes sense for your project and works for you, and provide enough documentation that someone can understand what you are doing.
-
-
-# Data exploration through figures
-
-Histogram plots for the continuous outcomes. 
-
-Height first.
-
+## Table 1. Baseline characteristics of the study population
+This table shows the baseline characteristics of all eligible individuals at the 1996 wave (baseline).
 ```{r}
-p1 <- mydata %>% ggplot(aes(x=Height)) + geom_histogram() 
-plot(p1)
-figure_file = here("results", "figures","height-distribution.png")
-ggsave(filename = figure_file, plot=p1) 
+# Table 1: Baseline characteristics of the overall study population
+table1 <- hrs_final %>%
+  filter(STUDYYR == 1996) %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(
+    BASELINE_AGE, BASELINE_BMI, LN_WEALTH, LN_HITOT, CHRONIC_N,
+    RAGENDER, RACE_ETH3, RAEDUC, HAS_INS,
+    EMP_STATUS, SMOKESTATUS, R_DEPRES, BASELINE_BMI_CAT
+  ) %>%
+  mutate(CHRONIC_N = as.numeric(CHRONIC_N)) %>%
+  tbl_summary(
+    type = list(CHRONIC_N ~ "continuous"),
+    statistic = list(
+      all_continuous()  ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    label = list(
+      BASELINE_AGE     ~ "Age at baseline (years)",
+      BASELINE_BMI     ~ "BMI at baseline (kg/m²)",
+      LN_WEALTH        ~ "Log household wealth",
+      LN_HITOT         ~ "Log total income",
+      CHRONIC_N        ~ "Number of chronic conditions",
+      RAGENDER         ~ "Gender",
+      RACE_ETH3        ~ "Race/Ethnicity",
+      RAEDUC           ~ "Education",
+      HAS_INS          ~ "Health insurance",
+      EMP_STATUS       ~ "Employment status",
+      SMOKESTATUS      ~ "Smoking status",
+      R_DEPRES         ~ "Depression",
+      BASELINE_BMI_CAT ~ "BMI category"
+    ),
+    missing = "no"
+  ) %>%
+  bold_labels() %>%
+  modify_caption("**Table 1. Baseline Characteristics of the Study Population**")
+
+table1
+
+# Save
+table1 %>%
+  as_tibble() %>%
+  write_csv(here("results", "tables", "t1_baseline.csv"))
 ```
 
-Now weights.
-
+## P3. Dementia prevalence by wave
+This figure shows the prevalence of dementia at each wave. We expect to see an increasing trend in dementia prevalence over time as the cohort ages.
 ```{r}
-p2 <- mydata %>% ggplot(aes(x=Weight)) + geom_histogram() 
-plot(p2)
-figure_file = here("results", "figures","weight-distribution.png")
-ggsave(filename = figure_file, plot=p2) 
+dementia_incidence <- hrs_final %>%
+  filter(!is.na(COGFUNCTION)) %>%
+  group_by(STUDYYR) %>%
+  summarise(
+    n_total    = n(),
+    n_demented = sum(COGFUNCTION == "Demented"),
+    rate       = round(n_demented / n_total * 100, 1),
+    .groups    = "drop"
+  )
+
+p_cog2 <- dementia_incidence %>%
+  ggplot(aes(x = factor(STUDYYR), y = rate)) +
+  geom_line(aes(group = 1), color = "#F44336", linewidth = 1) +
+  geom_point(color = "#F44336", size = 3) +
+  geom_text(aes(label = paste0(rate, "%")),
+            vjust = -0.8, size = 3) +
+  labs(title = "Dementia Prevalence Rate by Wave",
+       x = "Study Year", y = "Prevalence (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(here("results", "figures", "p3_dementia_prevalence_by_wave.png"),
+       plot = p_cog2, width = 10, height = 6, dpi = 300)
 ```
 
-Now height as function of weight.
-
+## Exposure Variable Distribution
+## P4. Distribution of BMI Coefficient of Variation (CV%) across wave windows
+This figure shows the distribution of BMI CV% across the three wave windows (W3, W6, W9). We expect to see a right-skewed distribution with most individuals having low BMI variability and a tail of individuals with higher variability.
 ```{r}
-p3 <- mydata %>% ggplot(aes(x=Height, y=Weight)) + geom_point() + geom_smooth(method='lm')
-plot(p3)
-figure_file = here("results", "figures", "height-weight.png")
-ggsave(filename = figure_file, plot=p3) 
+p_exp1 <- hrs_final %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(HHIDPN, BMI_CV_W3, BMI_CV_W6, BMI_CV_W9) %>%
+  pivot_longer(-HHIDPN,
+               names_to  = "window",
+               values_to = "BMI_CV") %>%
+  mutate(window = case_when(
+    window == "BMI_CV_W3" ~ "W3 (3 waves)",
+    window == "BMI_CV_W6" ~ "W6 (6 waves)",
+    window == "BMI_CV_W9" ~ "W9 (9 waves)"
+  )) %>%
+  filter(!is.na(BMI_CV)) %>%
+  ggplot(aes(x = BMI_CV, fill = window, color = window)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Distribution of BMI Coefficient of Variation (CV%)",
+       subtitle = "Across W3, W6, and W9 wave windows",
+       x = "BMI CV (%)", y = "Density",
+       fill = "Wave Window", color = "Wave Window") +
+  theme_minimal()
+
+ggsave(here("results", "figures", "p4_bmi_cv_distribution.png"),
+       plot = p_exp1, width = 10, height = 6, dpi = 300)
 ```
 
-Once more height as function of weight, stratified by gender. Note that there is so little data, it's a bit silly. But we'll plot it anyway.
-
 ```{r}
-p4 <- mydata %>% ggplot(aes(x=Height, y=Weight, color = Gender)) + geom_point() + geom_smooth(method='lm')
-plot(p4)
-figure_file = here("results", "figures", "height-weight-stratified.png")
-ggsave(filename = figure_file, plot=p4) 
+p_exp2 <- hrs_final %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(HHIDPN, starts_with("BMI_CV_W")) %>%
+  pivot_longer(-HHIDPN,
+               names_to  = "window",
+               values_to = "BMI_CV") %>%
+  mutate(window = str_remove(window, "BMI_CV_")) %>%
+  filter(!is.na(BMI_CV)) %>%
+  ggplot(aes(x = window, y = BMI_CV, fill = window)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "BMI CV(%) by Wave Window (W3-W9)",
+       x = "Wave Window", y = "BMI CV (%)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggsave(here("results", "figures", "p5_bmi_cv_boxplot.png"),
+       plot = p_exp2, width = 10, height = 6, dpi = 300)
+
 ```
 
+```{r}
+# Check BMI CV outliers
+hrs_final %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(starts_with("BMI_CV_W")) %>%
+  summary()
+
+# Check how many people have BMI_CV > 20% (extreme outliers)
+hrs_final %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  summarise(
+    n_cv_w3_gt20 = sum(BMI_CV_W3 > 20, na.rm = TRUE),
+    n_cv_w6_gt20 = sum(BMI_CV_W6 > 20, na.rm = TRUE),
+    n_cv_w9_gt20 = sum(BMI_CV_W9 > 20, na.rm = TRUE),
+    pct_w3 = round(mean(BMI_CV_W3 > 20, na.rm = TRUE) * 100, 2),
+    pct_w6 = round(mean(BMI_CV_W6 > 20, na.rm = TRUE) * 100, 2),
+    pct_w9 = round(mean(BMI_CV_W9 > 20, na.rm = TRUE) * 100, 2)
+  )
+
+# Check what BMI values these extreme outliers have
+hrs_final %>%
+  filter(BMI_CV_W9 > 20) %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(HHIDPN, BASELINE_BMI, BMI_CV_W9, BMI_MEAN_W9, BMI_SD_W9) %>%
+  arrange(desc(BMI_CV_W9)) %>%
+  head(20)
+```
 
 
 # Notes
