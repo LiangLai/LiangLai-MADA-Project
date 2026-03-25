@@ -12,19 +12,12 @@ library(tidyverse)
 library(haven) 
 library(stringr)
 library(zoo)
-#path to data
 #note the use of the here() package and not absolute paths
 data_location <- here::here("data","processed-data","hrs_final_long.rds")
 
 #load data. 
 hrs_final <- readRDS(data_location)
 
-
-######################################
-#Data fitting/statistical analysis
-######################################
-
-############################
 #### First model fit
 # fit linear model using height as outcome, weight as predictor
 # Define eligible risk set for W3
@@ -86,4 +79,6 @@ fit_w3 <- coxph(
   data = surv_w3
 )
 summary(fit_w3)
-cox.zph(fit_w3)  
+cox.zph(fit_w3) 
+cox_table <- tidy(fit_w3, exponentiate = TRUE, conf.int = TRUE)
+write_csv(cox_table, here("results", "tables", "cox_w3_results.csv"))

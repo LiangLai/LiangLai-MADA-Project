@@ -6,10 +6,11 @@ The raw data files used in this processing script are **not included in this rep
 - Files needed: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`, `rwide_table.sas7bdat`
 - Download from: [RAND HRS](https://hrsdata.isr.umich.edu/data-products/long-format-data-rand-hrs-longitudinal-file-2020)
 
-**2. Langa-Weir Cognitive Classification Dataset (1995-2022)**
-- File needed: `cogfinallimp_9522wide.dta`
-- Download from: [HRS Website](https://hrsdata.isr.umich.edu/data-products/langa-weir-classification-cognitive-function-1995-2022)
-Then put them into correct position
+**2. Langa-Weir Cognitive Classification Dataset (1995–2022)**
+- File needed: `cogfinalimp_9522wide.dta`
+- This file has already been included in the project folder.
+- Original source: [HRS Website](https://hrsdata.isr.umich.edu/data-products/langa-weir-classification-cognitive-function-1995-2022)
+Then put them into raw-data
 
 ## Overview
 This folder contains the data processing and cleaning scripts for the HRS cognition study.
@@ -20,7 +21,7 @@ This folder contains the data processing and cleaning scripts for the HRS cognit
 - `rlong_table.sas7bdat` : RAND HRS Longitudinal File 2020 (respondent wave-varying variables)
 - `hlong_table.sas7bdat` : RAND HRS Longitudinal File 2020 (household wave-varying variables)
 - `rwide_table.sas7bdat` : RAND HRS Longitudinal File 2020 (time-invariant demographic variables)
-- `cogfinallimp_9522wide.dta` : Langa-Weir Cognitive Classification Dataset (1995-2022)
+- `cogfinalimp_9522wide.dta` : Langa-Weir Cognitive Classification Dataset (1995-2022)
 
 ## Processing Steps
 ### Step 1: Load Data
@@ -50,10 +51,4 @@ This folder contains the data processing and cleaning scripts for the HRS cognit
 ### Step 6: Final Dataset
 - Select only variables needed for regression analysis
 - Filter to individuals with baseline data (1996 wave)
-- Save as `hrs_cognition_final.rds`
-
-## Output
-- **10,324 unique individuals**
-- **88,879 person-wave observations**
-- **13 waves** (1996-2020, biennial)
-- **Average 8.6 waves per person**
+- Save as `hrs_final_long.rds`

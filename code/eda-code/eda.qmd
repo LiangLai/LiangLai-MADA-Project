@@ -18,7 +18,7 @@ library(gtsummary)
 ```
 
 Load the data.
-```{r}
+```{r} 
 #load data
 hrs_final <- readRDS(here("data", "processed-data", "hrs_final_long.rds"))
 ```
@@ -29,7 +29,9 @@ hrs_final <- readRDS(here("data", "processed-data", "hrs_final_long.rds"))
 summary(hrs_final)
 ```
 
-## P1. Sample size per wave
+## 3. Overall Sample Overview
+This section describes the overall structure of the processed longitudinal dataset, including sample size, cognitive status, and dementia prevalence across study waves.
+## Figure 1. Sample Size by Wave in the Full Processed Dataset
 ```{r}
 # This figure shows the number of observations in each survey wave from 1996 to 2020.
 p1 <- hrs_final %>%
@@ -37,7 +39,7 @@ p1 <- hrs_final %>%
   ggplot(aes(x = factor(STUDYYR), y = n)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   geom_text(aes(label = n), vjust = -0.5, size = 3) +
-  labs(title = "Sample Size per Wave",
+  labs(title = "Figure 1. Sample Size by Wave in the Full Processed Dataset",
        x = "Study Year", y = "Number of Observations") +
   theme_minimal()
 print(p1)
@@ -46,6 +48,7 @@ ggsave(here("results", "figures", "p1_sample_size_per_wave.png"),
        plot = p1, width = 8, height = 5, dpi = 300)
 ```
 ## P2. Cognitive function distribution by wave
+This figure shows the distribution of cognitive function status across study waves, highlighting a gradual increase in the proportions of CIND and dementia over time.
 ```{r}
 # Proportion of Normal, CIND, and Demented individuals at each wave. An increasing proportion of dementia over time is expected.
 cogfunction_table <- hrs_final %>%
@@ -60,7 +63,7 @@ p2 <- cogfunction_table %>%
   scale_fill_manual(values = c("Normal"   = "#2196F3",
                                "CIND"     = "#FF9800",
                                "Demented" = "#F44336")) +
-  labs(title = "Cognitive Function Distribution by Wave",
+  labs(title = "Figure 2. Cognitive Function Distribution by Wave",
        x = "Study Year", y = "Percentage (%)",
        fill = "Cognitive Status") +
   theme_minimal() +
@@ -68,6 +71,34 @@ p2 <- cogfunction_table %>%
 
 ggsave(here("results", "figures", "p2_cogfunction_by_wave.png"),
        plot = p2, width = 10, height = 6, dpi = 300)
+```
+
+## P3. Dementia prevalence by wave
+This figure shows the prevalence of dementia at each wave. We expect to see an increasing trend in dementia prevalence over time as the cohort ages.
+```{r}
+dementia_prevalence <- hrs_final %>%
+  filter(!is.na(COGFUNCTION)) %>%
+  group_by(STUDYYR) %>%
+  summarise(
+    n_total    = n(),
+    n_demented = sum(COGFUNCTION == "Demented"),
+    rate       = round(n_demented / n_total * 100, 1),
+    .groups    = "drop"
+  )
+
+p_cog2 <- dementia_prevalence %>%
+  ggplot(aes(x = factor(STUDYYR), y = rate)) +
+  geom_line(aes(group = 1), color = "#F44336", linewidth = 1) +
+  geom_point(color = "#F44336", size = 3) +
+  geom_text(aes(label = paste0(rate, "%")),
+            vjust = -0.8, size = 3) +
+  labs(title = "Figure 3. Dementia Prevalence by Wave",
+       x = "Study Year", y = "Prevalence (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(here("results", "figures", "p3_dementia_prevalence_by_wave.png"),
+       plot = p_cog2, width = 10, height = 6, dpi = 300)
 ```
 
 ## Table 1. Baseline characteristics of the study population
@@ -108,48 +139,19 @@ table1 <- hrs_final %>%
   ) %>%
   bold_labels() %>%
   modify_caption("**Table 1. Baseline Characteristics of the Study Population**")
-
 table1
-
 # Save
 table1 %>%
   as_tibble() %>%
   write_csv(here("results", "tables", "t1_baseline.csv"))
 ```
 
-## P3. Dementia prevalence by wave
-This figure shows the prevalence of dementia at each wave. We expect to see an increasing trend in dementia prevalence over time as the cohort ages.
-```{r}
-dementia_incidence <- hrs_final %>%
-  filter(!is.na(COGFUNCTION)) %>%
-  group_by(STUDYYR) %>%
-  summarise(
-    n_total    = n(),
-    n_demented = sum(COGFUNCTION == "Demented"),
-    rate       = round(n_demented / n_total * 100, 1),
-    .groups    = "drop"
-  )
-
-p_cog2 <- dementia_incidence %>%
-  ggplot(aes(x = factor(STUDYYR), y = rate)) +
-  geom_line(aes(group = 1), color = "#F44336", linewidth = 1) +
-  geom_point(color = "#F44336", size = 3) +
-  geom_text(aes(label = paste0(rate, "%")),
-            vjust = -0.8, size = 3) +
-  labs(title = "Dementia Prevalence Rate by Wave",
-       x = "Study Year", y = "Prevalence (%)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggsave(here("results", "figures", "p3_dementia_prevalence_by_wave.png"),
-       plot = p_cog2, width = 10, height = 6, dpi = 300)
-```
 
 ## Exposure Variable Distribution
 ## P4. Distribution of BMI Coefficient of Variation (CV%) across wave windows
 This figure shows the distribution of BMI CV% across the three wave windows (W3, W6, W9). We expect to see a right-skewed distribution with most individuals having low BMI variability and a tail of individuals with higher variability.
 ```{r}
-p_exp1 <- hrs_final %>%
+p4 <- hrs_final %>%
   distinct(HHIDPN, .keep_all = TRUE) %>%
   select(HHIDPN, BMI_CV_W3, BMI_CV_W6, BMI_CV_W9) %>%
   pivot_longer(-HHIDPN,
@@ -163,18 +165,20 @@ p_exp1 <- hrs_final %>%
   filter(!is.na(BMI_CV)) %>%
   ggplot(aes(x = BMI_CV, fill = window, color = window)) +
   geom_density(alpha = 0.4) +
-  labs(title = "Distribution of BMI Coefficient of Variation (CV%)",
+  labs(title = "Figure 4. Distribution of BMI Variability Measures Across Wave Windows",
        subtitle = "Across W3, W6, and W9 wave windows",
        x = "BMI CV (%)", y = "Density",
        fill = "Wave Window", color = "Wave Window") +
   theme_minimal()
 
 ggsave(here("results", "figures", "p4_bmi_cv_distribution.png"),
-       plot = p_exp1, width = 10, height = 6, dpi = 300)
+       plot = p4, width = 10, height = 6, dpi = 300)
 ```
 
+## P5. Boxplots of BMI Variability Measures Across Wave Windows
+This figure compares the distribution of BMI variability across wave windows from W3 to W9. The median BMI CV appears to increase gradually as the number of waves used in the calculation becomes larger, although substantial overlap remains across windows.
 ```{r}
-p_exp2 <- hrs_final %>%
+p5 <- hrs_final %>%
   distinct(HHIDPN, .keep_all = TRUE) %>%
   select(HHIDPN, starts_with("BMI_CV_W")) %>%
   pivot_longer(-HHIDPN,
@@ -184,13 +188,13 @@ p_exp2 <- hrs_final %>%
   filter(!is.na(BMI_CV)) %>%
   ggplot(aes(x = window, y = BMI_CV, fill = window)) +
   geom_boxplot(outlier.alpha = 0.3) +
-  labs(title = "BMI CV(%) by Wave Window (W3-W9)",
+  labs(title = "Figure 5. Boxplots of BMI Variability Measures Across Wave Windows",
        x = "Wave Window", y = "BMI CV (%)") +
   theme_minimal() +
   theme(legend.position = "none")
 
 ggsave(here("results", "figures", "p5_bmi_cv_boxplot.png"),
-       plot = p_exp2, width = 10, height = 6, dpi = 300)
+       plot = p5, width = 10, height = 6, dpi = 300)
 
 ```
 
@@ -222,8 +226,151 @@ hrs_final %>%
   head(20)
 ```
 
+# W3-specific exploratory analysis
+This section focuses on the W3 landmark sample and provides descriptive analyses of baseline characteristics and preliminary exposure–outcome patterns by BMI variability group.
+## Definition of the W3-Eligible Sample
+```{r}
+## Define eligible risk set for W3
+eligible_w3 <- hrs_final %>%
+  filter(STUDYYR %in% c(1996, 1998, 2000)) %>%
+  group_by(HHIDPN) %>%
+  summarise(
+    n_waves_present   = n_distinct(STUDYYR),
+    any_cog_imp_to_lm = any(COGFUNCTION %in% c("CIND", "Demented"), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(
+    n_waves_present == 3,
+    !any_cog_imp_to_lm
+  ) %>%
+  pull(HHIDPN)
 
-# Notes
+cat("W3 eligible individuals:", length(eligible_w3), "\n")
+```
+
+## Table 2. Baseline characteristics by BMI variability group (W3)
+```{r}
+table2 <- hrs_final %>%
+  filter(STUDYYR == 1996, HHIDPN %in% eligible_w3) %>%
+  distinct(HHIDPN, .keep_all = TRUE) %>%
+  select(
+    BMIV_CAT_W3,
+    BASELINE_AGE, BASELINE_BMI, LN_WEALTH, LN_HITOT, CHRONIC_N,
+    RAGENDER, RACE_ETH3, RAEDUC, HAS_INS,
+    EMP_STATUS, SMOKESTATUS, R_DEPRES, BASELINE_BMI_CAT
+  ) %>%
+  mutate(CHRONIC_N = as.numeric(CHRONIC_N)) %>%
+  tbl_summary(
+    by = BMIV_CAT_W3,
+    type = list(CHRONIC_N ~ "continuous"),
+    statistic = list(
+      all_continuous()  ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    missing = "no",
+    label = list(
+      BASELINE_AGE      ~ "Age at baseline (years)",
+      BASELINE_BMI      ~ "BMI at baseline (kg/m²)",
+      LN_WEALTH         ~ "Log household wealth",
+      LN_HITOT          ~ "Log total income",
+      CHRONIC_N         ~ "Number of chronic conditions",
+      RAGENDER          ~ "Gender",
+      RACE_ETH3         ~ "Race/Ethnicity",
+      RAEDUC            ~ "Education",
+      HAS_INS           ~ "Health insurance",
+      EMP_STATUS        ~ "Employment status",
+      SMOKESTATUS       ~ "Smoking status",
+      R_DEPRES          ~ "Depression",
+      BASELINE_BMI_CAT  ~ "BMI category"
+    )
+  ) %>%
+  add_overall() %>%
+  add_p() %>%
+  bold_labels() %>%
+  modify_caption("**Table 2. Baseline Characteristics by BMI Variability Group (W3)**")
+
+table2
+
+table2 %>%
+  as_tibble() %>%
+  write_csv(here("results", "tables", "t2_baseline_by_bmiv_w3.csv"))
+```
+
+# P6. Cognitive function distribution by BMI variability group (W3)
+This figure compares cognitive function status across BMI variability groups in the W3-eligible sample. Participants in the higher BMI variability groups appear to have lower proportions of normal cognition and higher proportions of CIND and dementia.
+```{r}
+p6 <- hrs_final %>%
+  filter(HHIDPN %in% eligible_w3,
+         !is.na(BMIV_CAT_W3),
+         !is.na(COGFUNCTION)) %>%
+  count(BMIV_CAT_W3, COGFUNCTION) %>%
+  group_by(BMIV_CAT_W3) %>%
+  mutate(pct = n / sum(n) * 100) %>%
+  ungroup() %>%
+  ggplot(aes(x = BMIV_CAT_W3, y = pct, fill = COGFUNCTION)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = paste0(round(pct, 1), "%")),
+    position = position_stack(vjust = 0.5),
+    size = 3, color = "white"
+  ) +
+  scale_fill_manual(values = c(
+    "Normal"   = "#2196F3",
+    "CIND"     = "#FF9800",
+    "Demented" = "#E24B4A"
+  )) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  labs(
+    title = "Figure 6. Cognitive Function Distribution by BMI Variability Group (W3)",
+    x = "BMI variability group",
+    y = "Percentage (%)",
+    fill = "Cognitive status"
+  ) +
+  theme_minimal()
+
+ggsave(here("results", "figures", "p6_cogfunction_by_bmiv_w3.png"),
+       plot = p6, width = 8, height = 5, dpi = 300)
+```
+
+## P7. Dementia Prevalence Over Time by BMI Variability Group (W3)
+This figure compares dementia prevalence over time across BMI variability groups in the W3-eligible sample. Dementia prevalence rises in all groups over follow-up, with the medium- and high-variability groups appearing to have higher levels than the low-variability group at most time points.
+```{r}
+p7 <- hrs_final %>%
+  filter(HHIDPN %in% eligible_w3,
+         !is.na(BMIV_CAT_W3),
+         !is.na(COGFUNCTION),
+    STUDYYR >= 2000   # after landmark 
+  ) %>%
+  group_by(STUDYYR, BMIV_CAT_W3) %>%
+  summarise(
+    n_total    = n(),
+    n_demented = sum(COGFUNCTION == "Demented", na.rm = TRUE),
+    rate       = n_demented / n_total * 100,
+    .groups    = "drop"
+  ) %>%
+  ggplot(aes(x = STUDYYR, y = rate,
+             color = BMIV_CAT_W3, group = BMIV_CAT_W3)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c(
+    "Low variability"    = "#2196F3",
+    "Medium variability" = "#FF9800",
+    "High variability"   = "#E24B4A"
+  )) +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  labs(
+    title = "Figure 7. Dementia Prevalence Over Time by BMI Variability Group (W3)",
+    x = "Study year",
+    y = "Dementia prevalence (%)",
+    color = "BMI variability"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(here("results", "figures", "p7_dementia_trend_by_bmiv_w3.png"),
+       plot = p7, width = 9, height = 5, dpi = 300)
+```
+
 
 
 
