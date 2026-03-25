@@ -14,7 +14,7 @@ RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`,
 ## Reproduction Instructions
 **Step 1 — Data processing** :
 - Download raw HRS files (see Data Access above. If you can't download, you can start step 2 with eda part.) 
-- Run `code/processing-code/cleaning.qmd`
+- Run `code/processing-code/processingfile-hrs.qmd`
 
 **Step 2 — Exploratory analysis:**
 - Run `code/analysis-code/eda.qmd`
