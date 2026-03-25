@@ -16,6 +16,7 @@ library(here)
 library(knitr)
 library(haven)
 library(tidyverse)
+library(flextable)
 library(dplyr)
 library(readr)
 library(gt)
@@ -128,12 +129,12 @@ knitr::include_graphics(here("results", "figures", "p4_bmi_cv_distribution.png")
 
 
 ## Basic statistical analysis
-Table 3 presents the main W3 landmark analysis results. In the unadjusted Cox model, higher BMI variability was associated with a higher hazard of incident dementia (HR = 1.03, 95% CI: 1.00–1.06, p = 0.021). After adjustment for baseline demographic, socioeconomic, and health-related covariates, the association was attenuated and became marginally significant (HR = 1.02, 95% CI: 1.00–1.05, p = 0.053). In the categorical model, compared with the low BMI variability group, the high variability group had a significantly higher hazard of incident dementia (HR = 1.36, 95% CI: 1.03–1.80, p = 0.029), whereas the medium variability group showed a smaller and non-significant increase in risk (HR = 1.13, 95% CI: 0.90–1.42, p = 0.276).
+Table 2 presents the main W3 landmark analysis results. In the unadjusted Cox model, higher BMI variability was associated with a higher hazard of incident dementia (HR = 1.03, 95% CI: 1.00–1.06, p = 0.021). After adjustment for baseline demographic, socioeconomic, and health-related covariates, the association was attenuated and became marginally significant (HR = 1.02, 95% CI: 1.00–1.05, p = 0.053). In the categorical model, compared with the low BMI variability group, the high variability group had a significantly higher hazard of incident dementia (HR = 1.36, 95% CI: 1.03–1.80, p = 0.029), whereas the medium variability group showed a smaller and non-significant increase in risk (HR = 1.13, 95% CI: 0.90–1.42, p = 0.276).
 @tbl-main-model-results summarizes the main W3 landmark analysis results for the association between BMI variability and incident dementia.
 ```{r}
 #| label: tbl-main-model-results
+#| tbl-cap: "Main W3 Landmark Analysis Results for the Association between BMI Variability and Incident Dementia."
 #| echo: FALSE
-#| tbl-cap: "Association Between BMI Variability and Incident Dementia in the W3 Landmark Analysis."
 main_results <- read_csv(
   here("results", "tables", "cox_all_models_combined.csv"),
   show_col_types = FALSE
@@ -164,16 +165,11 @@ main_results <- read_csv(
   select(Model, Exposure, HR, `95% CI`, `p-value`)
 
 main_results %>%
-  gt() %>%
-  tab_header(
-    title = md("**Association Between BMI Variability and Incident Dementia in the W3 Landmark Analysis**")
-  ) %>%
-  tab_options(
-    table.font.size = px(15),
-    heading.align = "center",
-    table.width = pct(90),
-    data_row.padding = px(6)
-  )
+  flextable() %>%
+  autofit() %>% 
+  align(align = "center", part = "all") %>%
+  font(fontname = "Times New Roman", part = "all") %>% 
+  fontsize(size = 11, part = "all")
 ```
 
 ## Full analysis Planing
