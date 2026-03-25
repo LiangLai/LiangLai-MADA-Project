@@ -10,19 +10,19 @@ bibliography: ../../assets/dataanalysis-references.bib
 csl: ../../assets/american-journal-of-epidemiology.csl
 ---
 
-
-
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # load a few R packages
 library(here)
 library(knitr)
 library(haven)
+library(readr)
+library(gt)
 ```
 
 
 **Authors**  
 
-* Liang Lai$^{1,*}$ (ORCID: 0000-0000-1234-5678) 
+* Liang Lai$^{1,*}$ 
 
 
 **Author affiliations**  
@@ -34,10 +34,9 @@ library(haven)
 
 
 
-# Summary/Abstract
-_Write a summary of your project._
+# Abstract
 
-_It is recommended to use a structured abstract with Background/Methods/Results/Discussion sections._
+Planing
 
 {{< pagebreak >}}
 
@@ -48,109 +47,133 @@ _It is recommended to use a structured abstract with Background/Methods/Results/
 Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life, but little is known about whether a more unstable BMI over time is associated with worse cognitive outcomes. This study investigated the relationship between long-term BMI variability (BMIV) and dementia risk in older adults in the US.
 
 ## Description of data and data source
-We will use data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50+, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. We will use publicly available HRS/RAND HRS data files that can be shared within the class repository to ensure full reproducibility.
-The analytic dataset will be constructed at the person-wave level and then converted into an incident-event (time-to-event) format for survival analysis. Key measures include repeated BMI observations over time, baseline covariates (e.g., age, sex, race/ethnicity, education), and time-varying health and lifestyle factors where available. Because HRS is a real-world longitudinal survey, it contains typical “messy” features (e.g., missingness across waves, irregular observation patterns, attrition, and measurement variability), which requires explicit data cleaning and processing.
-
-## Quick check data 
-
-```{r}
-# path to data
-# Use sample data (only 100 size) to check
-hrs_sample <- readRDS(here("data", "processed-data", "randhrs_sample_100.rds"))
-```
-```{r}
-glimpse(hrs_sample)
-head(hrs_sample)
-```
-
-The raw RAND HRS dataset used in this project contains 45,234 observations (rows) and 19,880 variables (columns). The large number of variables is primarily due to the longitudinal structure of HRS: many measures are repeated across multiple survey waves, and the same concept is stored as wave-specific variables. In RAND HRS, these repeated measures are often organized using wave identifiers (e.g., r1, r2, r3, …), corresponding to survey waves over time (up to ~16 waves depending on the measure and harmonization). As a result, a single construct (e.g., BMI, cognition, health conditions) may appear in multiple wave-specific versions, substantially increasing the total column count.
-
-We will extract the wave-specific BMI and cognition variables needed for the analysis, and then restructure the data into a person-period (long) format to support BMI variability window construction and time-to-event modeling.
+We will use data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50+, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. Cognitive status was classified using the Langa-Weir algorithm, which categorizes respondents into normal cognition, cognitive impairment no dementia (CIND), and dementia based on cognitive test scores.
 
 ## Questions/Hypotheses to be addressed
-* Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50+?
+Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50+?
 
+We hypothesize that higher BMI variability will be associated with an increased risk of dementia.
 
 {{< pagebreak >}}
 
-# Planned Methods
-We will construct BMI variability (BMIV) as the coefficient of variation (CV) of repeated BMI measurements across fixed windows. And we will use Cox hazards regression model.
+# Methods
 
+## Study Design and Landmark Analysis
+We applied a landmark analysis design with the landmark set at wave 3 (year 2000). This approach defines a fixed time point at which exposure is measured and from which follow-up for the outcome begins, thereby avoiding immortal time bias and ensuring that exposure precedes outcome ascertainment.
 
+## Exposure: BMI Variability
+The primary exposure was long-term BMI variability, defined as the coefficient of variation (CV%) of repeated BMI measurements across waves 1–3 (1996–2000). The CV% is calculated as the standard deviation of BMI divided by the mean BMI, multiplied by 100:
 
--------------------------Planing-----------------------------
+$$CV\% = \frac{SD(\text{BMI})}{\bar{\text{BMI}}} \times 100$$
 
+To handle missing BMI values within the exposure window, we applied linear interpolation across waves.
+BMI CV% was examined both as a continuous variable and categorized into tertiles (low, medium, and high variability). Tertile cutpoints were derived from the W9 window distribution (the longest available follow-up window, spanning 1996–2012) to ensure consistent classification thresholds across all wave windows.
 
-## Schematic of workflow(Planing)
-
-Sometimes you might want to show a schematic diagram/figure that was not created with code (if you can do it with code, do it). @fig-schematic is an example of some - completely random/unrelated - schematic that was generated with BioRender.
-We store those figures in the `assets` folder.
-
-
-## Data acquisition 
-_As applicable, explain where and how you got the data. If you directly import the data from an online source, you can combine this section with the next._
-
-
-## Data import and cleaning
-_Write code that reads in the file and cleans it so it's ready for analysis. Since this will be fairly long code for most datasets, it might be a good idea to have it in one or several R scripts. If that is the case, explain here briefly what kind of cleaning/processing you do, and provide more details and well documented code somewhere (e.g. as supplement in a paper). All materials, including files that contain code, should be commented well so everyone can follow along._
-
+## Outcome 
+The primary outcome was incident dementia, defined as the first wave at which a participant was classified as "Demented" by the Langa-Weir algorithm following the landmark wave (2000). Once a dementia event was recorded subsequent observations for that individual were truncated.
 
 ## Statistical analysis
-_Explain anything related to your statistical analyses._
+Baseline characteristics of the study population were summarized overall and stratified by BMI variability tertile group. Continuous variables are presented as mean (standard deviation) and categorical variables as count (percentage). 
 
+We used Cox proportional hazards regression models to estimate hazard ratios (HRs) and 95% confidence intervals (CIs) for the association between BMI variability (both continuous and categorical) and incident dementia. The time scale was years since the landmark wave (2000). Model 1 was unadjusted, Model 2 adjusted for demographics, socioeconomic status, and health behaviors, and Model 3 is categorical BMI variability adjusted for the same covariates. We assessed the proportional hazards assumption using Schoenfeld residuals and found no violations. 
 
 {{< pagebreak >}}
 
 
 # Results
 
-## Exploratory/Descriptive analysis
+## Descriptive analysis
+In the overall study population at the 1996 wave, the mean age was 60.0 years (SD = 4.7), and the mean baseline BMI was 27.3 kg/m² (SD = 5.2). Slightly more than half of the participants were female (53%), and most were Non-Hispanic White (73%). Overall, 89% of participants had health insurance, and the mean number of chronic conditions was 0.94 (SD = 1.01). At baseline, 41% of participants were overweight and 25% were obese.
 
-_Use a combination of text/tables/figures to explore and describe your data. Show the most important descriptive results here. Additional ones should go in the supplement. Even more can be in the R and Quarto files that are part of your project._
-
-
-@tbl-summarytable shows a summary of the data.
-
-Note the loading of the data providing a **relative** path using the `../../` notation. (Two dots means a folder up). You never want to specify an **absolute** path like `C:\ahandel\myproject\results\` because if you share this with someone, it won't work for them since they don't have that path. You can also use the `here` R package to create paths. See examples of that below. I generally recommend the `here` package.
-
+@tbl-baseline-overall summarizes the baseline characteristics of the study population at the 1996 wave.
 ```{r}
-#| label: tbl-summarytable
-#| tbl-cap: "Data summary table."
+#| label: tbl-baseline-overall
+#| tbl-cap: "Baseline characteristics of the overall study population."
 #| echo: FALSE
-resulttable <- readRDS("../../results/tables/summarytable.rds")
-knitr::kable(resulttable)
+t1_baseline <- read_csv(here("results", "tables", "t1_baseline.csv"), show_col_types = FALSE)
+
+knitr::kable(t1_baseline)
+```
+Across study waves, the number of observations gradually declined, reflecting attrition over follow-up. The sample size decreased from 10,317 observations in 1996 to 3,121 observations in 2020.
+
+@fig-sample-size shows the sample size by wave in the full processed dataset.
+```{r}
+#| label: fig-sample-size
+#| fig-cap: "Sample Size by Wave in the Full Processed Dataset."
+#| echo: FALSE
+knitr::include_graphics(here("results", "figures", "p1_sample_size_per_wave.png"))
 ```
 
+Over time, the proportion of participants with normal cognition decreased, while the proportions with cognitive impairment no dementia and dementia increased. This pattern suggests a gradual worsening of cognitive status across follow-up waves.
+
+@fig-cog-wave shows the distribution of cognitive function categories across waves in the full processed dataset.
+```{r}
+#| label: fig-cog-wave
+#| fig-cap: "Figure 2. Cognitive Function Distribution by Wave."
+#| echo: FALSE
+knitr::include_graphics(here("results", "figures", "p2_cogfunction_by_wave.png"))
+```
+
+BMI variability measures showed substantial overlap across wave windows, although the distributions shifted modestly to the right as the observation window became longer. This pattern suggests that longer wave windows may capture greater weight fluctuation over time.
+
+@fig-bmiv-density shows the distribution of BMI variability measures across wave windows in the full processed dataset.
+```{r}
+#| label: fig-bmiv-density
+#| fig-cap: "Figure 4. Distribution of BMI Variability Measures Across Wave Windows."
+#| echo: FALSE
+knitr::include_graphics(here("results", "figures", "p4_bmi_cv_distribution.png"))
+```
 
 
 ## Basic statistical analysis
-
-_To get some further insight into your data, if reasonable you could compute simple statistics (e.g. simple models with 1 predictor) to look for associations between your outcome(s) and each individual predictor variable. Though note that unless you pre-specified the outcome and main exposure, any "p<0.05 means statistical significance" interpretation is not valid._
-
-
-@fig-result shows a scatterplot figure produced by one of the R scripts.
-
+Table 3 presents the main W3 landmark analysis results. In the unadjusted Cox model, higher BMI variability was associated with a higher hazard of incident dementia (HR = 1.03, 95% CI: 1.00–1.06, p = 0.021). After adjustment for baseline demographic, socioeconomic, and health-related covariates, the association was attenuated and became marginally significant (HR = 1.02, 95% CI: 1.00–1.05, p = 0.053). In the categorical model, compared with the low BMI variability group, the high variability group had a significantly higher hazard of incident dementia (HR = 1.36, 95% CI: 1.03–1.80, p = 0.029), whereas the medium variability group showed a smaller and non-significant increase in risk (HR = 1.13, 95% CI: 0.90–1.42, p = 0.276).
+@tbl-main-model-results
 ```{r}
-#| label: fig-result
-#| fig-cap: "Height and weight stratified by gender."
+#| label: tbl-main-model-results
 #| echo: FALSE
-knitr::include_graphics(here("results","figures","height-weight-stratified.png"))
+main_results <- read_csv(
+  here("results", "tables", "cox_all_models_combined.csv"),
+  show_col_types = FALSE
+) %>%
+  filter(term %in% c(
+    "BMI_CV_W3",
+    "BMIV_CAT_W3Medium variability",
+    "BMIV_CAT_W3High variability"
+  )) %>%
+  mutate(
+    Model = case_when(
+      model == "Unadjusted" & term == "BMI_CV_W3" ~ "Model 1",
+      model == "Adjusted" & term == "BMI_CV_W3" ~ "Model 2",
+      model == "Categorical" ~ "Model 3"
+    ),
+    Exposure = case_when(
+      term == "BMI_CV_W3" ~ "BMI variability (continuous, W3)",
+      term == "BMIV_CAT_W3Medium variability" ~ "Medium vs Low variability",
+      term == "BMIV_CAT_W3High variability" ~ "High vs Low variability"
+    ),
+    HR = sprintf("%.2f", estimate),
+    `95% CI` = paste0(sprintf("%.2f", conf.low), "–", sprintf("%.2f", conf.high)),
+    `p-value` = case_when(
+      p.value < 0.001 ~ "<0.001",
+      TRUE ~ sprintf("%.3f", p.value)
+    )
+  ) %>%
+  select(Model, Exposure, HR, `95% CI`, `p-value`)
+
+main_results %>%
+  gt() %>%
+  tab_header(
+    title = md("**Table 3. Association Between BMI Variability and Incident Dementia in the W3 Landmark Analysis**")
+  ) %>%
+  tab_options(
+    table.font.size = px(15),
+    heading.align = "center",
+    table.width = pct(90),
+    data_row.padding = px(6)
+  )
 ```
 
-
-## Full analysis
-
-_Use one or several suitable statistical/machine learning methods to analyze your data and to produce meaningful figures, tables, etc. This might again be code that is best placed in one or several separate R scripts that need to be well documented. You want the code to produce figures and data ready for display as tables, and save those. Then you load them here._
-
-Example @tbl-resulttable2 shows a summary of a linear model fit.
-
-```{r}
-#| label: tbl-resulttable2
-#| tbl-cap: "Linear model fit table."
-#| echo: FALSE
-resulttable2 <- readRDS(here("results","tables","resulttable2.rds"))
-knitr::kable(resulttable2)
-```
+## Full analysis Planing
 
 
 {{< pagebreak >}}
@@ -159,21 +182,11 @@ knitr::kable(resulttable2)
 # Discussion
 
 ## Summary and Interpretation
-_Summarize what you did, what you found and what it means._
 
 ## Strengths and Limitations
-_Discuss what you perceive as strengths and limitations of your analysis._
 
 ## Conclusions
-_What are the main take-home messages?_
 
-_Include citations in your Qmd file using BibTeX, the list of references will automatically be placed at the end_
-
-This paper [@leek2015] discusses types of analyses. 
-
-These papers [@mckay2020; @mckay2020a] are good examples of papers published using a fully reproducible setup similar to the one shown in this template. 
-
-Note that this cited reference will show up at the end of the document, the reference formatting is determined by the CSL file specified in the YAML header. Many more style files for almost any journal [are available](https://www.zotero.org/styles). You also specify the location of your BibTeX reference file in the YAML. You can call your reference file anything you like.
 
 
 {{< pagebreak >}}
