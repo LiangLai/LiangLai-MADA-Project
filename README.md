@@ -11,14 +11,6 @@ HRS data requires a free registration and data use agreement.
 RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`, `rwide_table.sas7bdat`.
 2. Link to the lange weir cognition data: <https://hrsdata.isr.umich.edu/data-products/langa-weir-classification-cognitive-function-1995-2022>.
 
-## Project Status
-###  Completed
-- Data loading and merging (RAND HRS Longitudinal File 2020 + Langa-Weir Cognitive Classification Dataset)
-- Data cleaning and wrangling
-- Variable creation and recoding
-- Final processed dataset saved as `hrs_cognition_final.rds`
-
-
 ## Reproduction Instructions
 **Step 1 — Data processing** :
 - Download raw HRS files (see Data Access above. If you can't download, you can start step 2 with eda part.) 
