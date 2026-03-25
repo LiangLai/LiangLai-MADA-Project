@@ -39,7 +39,7 @@ p1 <- hrs_final %>%
   ggplot(aes(x = factor(STUDYYR), y = n)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   geom_text(aes(label = n), vjust = -0.5, size = 3) +
-  labs(title = "Figure 1. Sample Size by Wave in the Full Processed Dataset",
+  labs(title = "Sample Size by Wave in the Full Processed Dataset",
        x = "Study Year", y = "Number of Observations") +
   theme_minimal()
 print(p1)
@@ -63,7 +63,7 @@ p2 <- cogfunction_table %>%
   scale_fill_manual(values = c("Normal"   = "#2196F3",
                                "CIND"     = "#FF9800",
                                "Demented" = "#F44336")) +
-  labs(title = "Figure 2. Cognitive Function Distribution by Wave",
+  labs(title = "Cognitive Function Distribution by Wave",
        x = "Study Year", y = "Percentage (%)",
        fill = "Cognitive Status") +
   theme_minimal() +
@@ -92,7 +92,7 @@ p_cog2 <- dementia_prevalence %>%
   geom_point(color = "#F44336", size = 3) +
   geom_text(aes(label = paste0(rate, "%")),
             vjust = -0.8, size = 3) +
-  labs(title = "Figure 3. Dementia Prevalence by Wave",
+  labs(title = "Dementia Prevalence by Wave",
        x = "Study Year", y = "Prevalence (%)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -165,7 +165,7 @@ p4 <- hrs_final %>%
   filter(!is.na(BMI_CV)) %>%
   ggplot(aes(x = BMI_CV, fill = window, color = window)) +
   geom_density(alpha = 0.4) +
-  labs(title = "Figure 4. Distribution of BMI Variability Measures Across Wave Windows",
+  labs(title = "Distribution of BMI Variability Measures Across Wave Windows",
        subtitle = "Across W3, W6, and W9 wave windows",
        x = "BMI CV (%)", y = "Density",
        fill = "Wave Window", color = "Wave Window") +
