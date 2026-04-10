@@ -13,7 +13,8 @@ library(zoo)
 library(survival)
 library(forcats)
 library(readr)
-library(scales)
+library(purrr)
+library(rlang)
 
 #note the use of the here() package and not absolute paths
 data_location <- here::here("data","processed-data","hrs_final_long.rds")
