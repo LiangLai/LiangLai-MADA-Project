@@ -20,6 +20,7 @@ library(flextable)
 library(dplyr)
 library(readr)
 library(gt)
+library(gtsummary)
 ```
 
 
@@ -39,7 +40,13 @@ library(gt)
 
 # Abstract
 
-Planing
+**Background:** Mid-life obesity has been linked to increased dementia risk, but whether long-term instability in body mass index (BMI) independently predicts dementia remains unclear.
+
+**Methods:** Using data from the Health and Retirement Study (1996–2020), we examined the association between BMI variability (BMIV), measured as the coefficient of variation (CV%) of repeated BMI measurements, and incident dementia among U.S. adults aged 50 and older. We applied a landmark analysis framework across waves 3 through 9 (years 2000–2012), fitting Cox proportional hazards models with both unadjusted and adjusted specifications. As a supplementary analysis, we used Random Survival Forests (RSF) to evaluate the relative predictive importance of BMIV among all covariates.
+
+**Results:** In the W3 landmark sample (N = 5,993; 469 dementia events), higher BMI variability was associated with increased dementia risk in unadjusted models (HR = 1.03 per 1% increase in CV, 95% CI: 1.00–1.06, p = 0.021). The association was strongest at the W6 landmark (HR = 1.06, 95% CI: 1.02–1.10, p = 0.002). In categorical analyses, the high BMIV group consistently showed elevated risk compared with the low group (W3 adjusted HR = 1.36, 95% CI: 1.03–1.80). RSF analysis confirmed that BMIV had modest but increasing predictive importance with longer measurement windows.
+
+**Conclusions:** Greater long-term BMI variability is associated with increased dementia risk among older U.S. adults, particularly when measured over longer observation windows. While the effect size is modest relative to established risk factors such as age and education, BMIV represents a potentially modifiable marker warranting further investigation.
 
 {{< pagebreak >}}
 
@@ -47,38 +54,56 @@ Planing
 # Introduction 
 
 ## General Background Information
-Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life, but little is known about whether a more unstable BMI over time is associated with worse cognitive outcomes. This study investigated the relationship between long-term BMI variability (BMIV) and dementia risk in older adults in the US.
+Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life. However, beyond mean BMI level, the stability of BMI over time may also carry prognostic information. Weight fluctuation has been associated with adverse cardiovascular and metabolic outcomes, but its relationship with cognitive decline and dementia remains understudied.
+
+BMI variability reflects a pattern of weight instability that may arise from repeated dieting, chronic illness, metabolic dysregulation, or changes in physical activity. These fluctuations may contribute to neurodegeneration through chronic inflammation, insulin resistance, and vascular damage — pathways that are also implicated in dementia etiology. Despite growing interest in the role of body weight dynamics in brain aging, few studies have examined long-term BMI variability as a predictor of incident dementia in population-based cohorts.
 
 ## Description of data and data source
-We will use data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50+, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. Cognitive status was classified using the Langa-Weir algorithm, which categorizes respondents into normal cognition, cognitive impairment no dementia (CIND), and dementia based on cognitive test scores.
+We used data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50 and older, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. Cognitive status was classified using the Langa-Weir algorithm, which categorizes respondents into normal cognition, cognitive impairment no dementia (CIND), and dementia based on cognitive test scores.
 
 ## Questions/Hypotheses to be addressed
-Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50+?
+Primary research question: Is greater long-term BMI variability associated with a higher risk of incident dementia among U.S. adults aged 50 and older?
 
-We hypothesize that higher BMI variability will be associated with an increased risk of dementia.
+We hypothesize that higher BMI variability will be associated with an increased risk of dementia, and that this association will be stronger when BMI variability is measured over longer observation windows.
 
 {{< pagebreak >}}
 
 # Methods
+## Study Design 
+We applied a landmark analysis framework to examine the association between BMI variability and incident dementia. The landmark approach defines a fixed time point at which exposure is measured and from which follow-up for the outcome begins, thereby avoiding immortal time bias and ensuring that exposure precedes outcome ascertainment.
 
-## Study Design and Landmark Analysis
-We applied a landmark analysis design with the landmark set at wave 3 (year 2000). This approach defines a fixed time point at which exposure is measured and from which follow-up for the outcome begins, thereby avoiding immortal time bias and ensuring that exposure precedes outcome ascertainment.
+We constructed landmark datasets at each wave from W3 (year 2000) through W9 (year 2012). For each landmark, individuals were required to have been observed in all preceding waves beginning with W1 (1996) and to have been free of CIND or dementia through the landmark wave. Follow-up for dementia events began at the landmark wave and continued through the last available observation.
 
 ## Exposure: BMI Variability
-The primary exposure was long-term BMI variability, defined as the coefficient of variation (CV%) of repeated BMI measurements across waves 1–3 (1996–2000). The CV% is calculated as the standard deviation of BMI divided by the mean BMI, multiplied by 100:
+The primary exposure was long-term BMI variability, defined as the coefficient of variation (CV%) of repeated BMI measurements from W1 through each landmark wave. The CV% is calculated as:
 
-$$CV\% = \frac{SD(\text{BMI})}{\bar{\text{BMI}}} \times 100$$
+$$CV\% = \frac{SD(\text{BMI})}{MEAN(\text{BMI})} \times 100$$
 
-To handle missing BMI values within the exposure window, we applied linear interpolation across waves.
-BMI CV% was examined both as a continuous variable and categorized into tertiles (low, medium, and high variability). Tertile cutpoints were derived from the W9 window distribution (the longest available follow-up window, spanning 1996–2012) to ensure consistent classification thresholds across all wave windows.
+To handle missing BMI values within the exposure window, we applied linear interpolation across waves. BMI CV% was examined both as a continuous variable and categorized into tertiles (low, medium, and high variability). Tertile cutpoints were derived from the W9 window distribution (the longest available follow-up window, spanning 1996–2012) to ensure consistent classification thresholds across all landmark windows: low (≤3.9%), medium (>3.9% to ≤6.5%), and high (>6.5%).
 
 ## Outcome 
-The primary outcome was incident dementia, defined as the first wave at which a participant was classified as "Demented" by the Langa-Weir algorithm following the landmark wave (2000). Once a dementia event was recorded subsequent observations for that individual were truncated.
+The primary outcome was incident dementia, defined as the first wave at which a participant was classified as "Demented" by the Langa-Weir algorithm following the landmark wave. Once a dementia event was recorded, subsequent observations for that individual were censored.
+
+## Covariates
+Models were adjusted for the following baseline covariates: age at baseline, sex, race/ethnicity (Non-Hispanic White, Non-Hispanic Black, Hispanic or Other), education (less than high school, GED, high school graduate, college or above), log-transformed household wealth, number of chronic conditions, health insurance status, employment status (employed, unemployed/not in labor force, retired, disabled), smoking status (never, ever/current), and depression.
 
 ## Statistical analysis
-Baseline characteristics of the study population were summarized overall and stratified by BMI variability tertile group. Continuous variables are presented as mean (standard deviation) and categorical variables as count (percentage). 
+Baseline characteristics of the W3 analytic sample were summarized overall and stratified by BMI variability tertile group. Continuous variables are presented as mean (standard deviation) and categorical variables as count (percentage). Group differences were assessed using Kruskal-Wallis tests for continuous variables and chi-squared tests for categorical variables.
 
-We used Cox proportional hazards regression models to estimate hazard ratios (HRs) and 95% confidence intervals (CIs) for the association between BMI variability (both continuous and categorical) and incident dementia. The time scale was years since the landmark wave (2000). Model 1 was unadjusted, Model 2 adjusted for demographics, socioeconomic status, and health behaviors, and Model 3 is categorical BMI variability adjusted for the same covariates. We assessed the proportional hazards assumption using Schoenfeld residuals and found no violations. 
+We used Cox proportional hazards regression models with counting-process format to estimate hazard ratios (HRs) and 95% confidence intervals (CIs) for the association between BMI variability and incident dementia. Robust standard errors were obtained using the cluster sandwich estimator to account for within-person correlation. For each landmark wave, four models were fitted:
+
+- **Model 1 (Unadjusted continuous):** BMI CV% as the sole predictor.
+- **Model 2 (Adjusted continuous):** BMI CV% adjusted for all covariates.
+- **Model 3 (Unadjusted categorical):** BMI variability tertile group as the sole predictor.
+- **Model 4 (Adjusted categorical):** BMI variability tertile group adjusted for all covariates.
+
+The proportional hazards assumption was assessed using Schoenfeld residuals. Main results are presented for W3, W6, and W9 landmark waves to illustrate findings across short, medium, and long exposure measurement windows.
+
+## Supplementary Machine Learning Analysis
+As a supplementary analysis, we fitted Random Survival Forests (RSF) on the W3 and W6 landmark samples to evaluate the relative predictive importance of BMI variability among all covariates. RSF is a non-parametric ensemble method that does not assume proportional hazards and can capture non-linear relationships. We used 1,000 trees with permutation-based variable importance. This analysis was intended to complement the Cox regression findings by providing insight into the predictive contribution of BMIV relative to other established risk factors.
+
+All analyses were conducted in R (version 4.5.2) using the survival, ranger, randomForestSRC, gtsummary, and gt packages.
+
 
 {{< pagebreak >}}
 
@@ -86,18 +111,9 @@ We used Cox proportional hazards regression models to estimate hazard ratios (HR
 # Results
 
 ## Descriptive analysis
-In the overall study population at the 1996 wave, the mean age was 60.0 years (SD = 4.7), and the mean baseline BMI was 27.3 kg/m² (SD = 5.2). Slightly more than half of the participants were female (53%), and most were Non-Hispanic White (73%). Overall, 89% of participants had health insurance, and the mean number of chronic conditions was 0.94 (SD = 1.01). At baseline, 41% of participants were overweight and 25% were obese.
 
-@tbl-baseline-overall summarizes the baseline characteristics of the study population at the 1996 wave.
-```{r}
-#| label: tbl-baseline-overall
-#| tbl-cap: "Baseline characteristics of the overall study population."
-#| echo: FALSE
-t1_baseline <- read_csv(here("results", "tables", "t1_baseline.csv"), show_col_types = FALSE)
-
-knitr::kable(t1_baseline)
-```
-Across study waves, the number of observations gradually declined, reflecting attrition over follow-up. The sample size decreased from 10,317 observations in 1996 to 3,121 observations in 2020.
+### Full Study Population
+The full processed HRS dataset included 10,317 individuals at the 1996 baseline wave. Over subsequent waves, the sample size gradually declined due to attrition, decreasing to 3,121 observations by 2020. The proportion of participants with normal cognition decreased over time, while the proportions with CIND and dementia increased, reflecting the aging of the cohort.
 
 @fig-sample-size shows the sample size by wave in the full processed dataset.
 ```{r}
@@ -107,9 +123,7 @@ Across study waves, the number of observations gradually declined, reflecting at
 knitr::include_graphics(here("results", "figures", "p1_sample_size_per_wave.png"))
 ```
 
-Over time, the proportion of participants with normal cognition decreased, while the proportions with cognitive impairment no dementia and dementia increased. This pattern suggests a gradual worsening of cognitive status across follow-up waves.
-
-@fig-cog-wave shows the distribution of cognitive function categories across waves in the full processed dataset.
+@fig-cog-wave shows the distribution of cognitive function categories across waves.
 ```{r}
 #| label: fig-cog-wave
 #| fig-cap: "Cognitive Function Distribution by Wave."
@@ -127,65 +141,71 @@ BMI variability measures showed substantial overlap across wave windows, althoug
 knitr::include_graphics(here("results", "figures", "p4_bmi_cv_distribution.png"))
 ```
 
+### W3 Analytic Sample
+@tbl-baseline summarizes the baseline characteristics of the W3 analytic sample by BMI variability group. Of the 5,993 participants, 4,078 (68.0%) were classified as having low BMI variability, 1,191 (19.9%) as mid variability, and 724 (12.1%) as high variability. 
 
-## Basic statistical analysis
-Table 2 presents the main W3 landmark analysis results. In the unadjusted Cox model, higher BMI variability was associated with a higher hazard of incident dementia (HR = 1.03, 95% CI: 1.00–1.06, p = 0.021). After adjustment for baseline demographic, socioeconomic, and health-related covariates, the association was attenuated and became marginally significant (HR = 1.02, 95% CI: 1.00–1.05, p = 0.053). In the categorical model, compared with the low BMI variability group, the high variability group had a significantly higher hazard of incident dementia (HR = 1.36, 95% CI: 1.03–1.80, p = 0.029), whereas the medium variability group showed a smaller and non-significant increase in risk (HR = 1.13, 95% CI: 0.90–1.42, p = 0.276).
-@tbl-main-model-results summarizes the main W3 landmark analysis results for the association between BMI variability and incident dementia.
 ```{r}
-#| label: tbl-main-model-results
-#| tbl-cap: "Main W3 Landmark Analysis Results for the Association between BMI Variability and Incident Dementia."
+#| label: tbl-baseline
+#| tbl-cap: "Baseline characteristics of the W3 analytic sample by BMI variability group."
 #| echo: FALSE
-main_results <- read_csv(
-  here("results", "tables", "cox_all_models_combined.csv"),
-  show_col_types = FALSE
-) %>%
-  filter(term %in% c(
-    "BMI_CV_W3",
-    "BMIV_CAT_W3Medium variability",
-    "BMIV_CAT_W3High variability"
-  )) %>%
-  mutate(
-    Model = case_when(
-      model == "Unadjusted" & term == "BMI_CV_W3" ~ "Model 1",
-      model == "Adjusted" & term == "BMI_CV_W3" ~ "Model 2",
-      model == "Categorical" ~ "Model 3"
-    ),
-    Exposure = case_when(
-      term == "BMI_CV_W3" ~ "BMI variability (continuous, W3)",
-      term == "BMIV_CAT_W3Medium variability" ~ "Medium vs Low variability",
-      term == "BMIV_CAT_W3High variability" ~ "High vs Low variability"
-    ),
-    HR = sprintf("%.2f", estimate),
-    `95% CI` = paste0(sprintf("%.2f", conf.low), "–", sprintf("%.2f", conf.high)),
-    `p-value` = case_when(
-      p.value < 0.001 ~ "<0.001",
-      TRUE ~ sprintf("%.3f", p.value)
-    )
-  ) %>%
-  select(Model, Exposure, HR, `95% CI`, `p-value`)
-
-main_results %>%
-  flextable() %>%
-  autofit() %>% 
-  align(align = "center", part = "all") %>%
-  font(fontname = "Times New Roman", part = "all") %>% 
-  fontsize(size = 11, part = "all")
+table1 <- readRDS(here("results", "tables", "table1_ft.rds"))
+table1
 ```
 
-## Full analysis Planing
+Participants in the high-variability group were slightly younger than those in the low-variability group (58.79 vs. 59.67 years, p < 0.001), but had a higher baseline BMI (28.44 vs. 26.91, p < 0.001). Higher BMI variability was also associated with lower log household wealth (11.34 vs. 12.21, p < 0.001), a higher prevalence of multiple chronic conditions (25% vs. 16% with >=2 chronic conditions, p < 0.001), lower insurance coverage (86% vs. 92%, p < 0.001), and more depression (15% vs. 8.4%, p < 0.001). The distribution of sex and employment status also differed across groups, with women and disability being more common in the high-variability group. By contrast, race/ethnicity and smoking status were broadly similar across BMI variability groups, while education showed only modest differences. Overall, higher BMI variability tended to cluster with higher baseline BMI, greater clinical burden, and less favorable socioeconomic conditions.
+
+## Cox Regression Analysis
+
+@tbl-cox-results presents the association between BMI variability and incident dementia across three landmark waves (W3, W6, and W9).
+```{r}
+#| label: tbl-cox-results
+#| tbl-cap: "Association of BMI variability and risk of all-cause dementia across W3, W6, and W9."
+#| echo: FALSE
+table2 <- readRDS(here("results", "tables", "table2_ft.rds"))
+table2 
+```
+
+In the W3 landmark analysis, higher BMI variability was associated with increased dementia risk in the unadjusted model (HR = 1.03 per 1% increase in CV, 95% CI: 1.00–1.06, p = 0.021). After adjustment for demographic, socioeconomic, and health-related covariates, the association was attenuated and became marginally significant (HR = 1.02, 95% CI: 1.00–1.05, p = 0.053). In categorical analyses, compared with the low BMIV group, the high variability group had a significantly higher adjusted hazard of dementia (HR = 1.36, 95% CI: 1.03–1.80), while the medium variability group showed a non-significant increase (HR = 1.13, 95% CI: 0.90–1.42).
+
+The association was stronger at the W6 landmark, where a longer measurement window was available. The adjusted continuous HR was 1.06 (95% CI: 1.02–1.10, p = 0.002), and the adjusted categorical HR for high versus low BMIV was 1.44 (95% CI: 0.99–2.10). At the W9 landmark, point estimates remained in the same direction (adjusted continuous HR = 1.05) but did not reach statistical significance, likely reflecting the smaller sample size (N = 2,660; 63 events).
+
+## Random Survival Forest Analysis
+
+To complement the Cox regression findings, we fitted Random Survival Forests on the W3 and W6 landmark samples. @fig-rsf-w3 and @fig-rsf-w6 display the permutation-based variable importance from each model.
+
+```{r}
+#| label: fig-rsf-w3
+#| fig-cap: "Variable importance from W3 Random Survival Forest."
+#| echo: FALSE
+knitr::include_graphics(here("results", "figures", "figureS_rsf_w3_variable_importance.png"))
+```
+
+```{r}
+#| label: fig-rsf-w6
+#| fig-cap: "Variable importance from W6 Random Survival Forest."
+#| echo: FALSE
+knitr::include_graphics(here("results", "figures", "figureS_rsf_w6_variable_importance.png"))
+```
+
+In the W3 RSF, age at baseline was by far the strongest predictor of incident dementia, followed by education and race/ethnicity. BMI variability ranked lowest in permutation importance, indicating limited independent predictive contribution over the short measurement window. In contrast, in the W6 RSF — which used BMI variability measured over a longer period (1996–2006) — BMIV ranked fourth among all predictors, above wealth, employment status, chronic conditions, depression, insurance, smoking, and sex. This pattern is consistent with the stronger Cox regression results observed at W6 and suggests that BMI variability measured over longer periods carries greater predictive value for dementia risk.
+
 
 
 {{< pagebreak >}}
 
 
-# Discussion
-
 ## Summary and Interpretation
+This study examined the association between long-term BMI variability and incident dementia risk among older U.S. adults using data from the Health and Retirement Study. Using a landmark analysis framework across multiple waves, we found that higher BMI variability was consistently associated with increased dementia risk. The association was strongest when BMI variability was measured over longer observation windows (W6 landmark), and the high variability group showed approximately 34–44% greater dementia risk compared with the low variability group across landmark waves.
+
+The RSF analysis provided complementary insights. While BMI variability ranked low in predictive importance when measured over only three waves (W3), its predictive contribution increased substantially with a longer measurement window (W6), where it ranked fourth among all covariates. This finding underscores that the predictive value of weight instability depends on the duration over which it is assessed. Importantly, the RSF results do not contradict the Cox regression findings; rather, they demonstrate that while BMIV is a statistically significant risk factor, its effect size is modest relative to established and non-modifiable predictors such as age, education, and race/ethnicity.
 
 ## Strengths and Limitations
+This study has several strengths. First, we used a large, nationally representative cohort with up to 24 years of follow-up, providing sufficient statistical power and generalizability. Second, the landmark analysis framework avoids immortal time bias and ensures temporal ordering of exposure and outcome. Third, we examined BMIV across multiple landmark waves, allowing assessment of how the measurement window length affects the observed association. Fourth, the supplementary RSF analysis provided an additional perspective on the predictive importance of BMIV using a flexible, non-parametric method.
+
+Several limitations should also be noted. First, BMI was based on self-reported height and weight, which may introduce measurement error. Second, dementia classification relied on the Langa-Weir algorithm applied to cognitive test scores rather than clinical diagnosis, which may result in misclassification. Third, the complete-case approach to handling missing covariates may have introduced selection bias if missingness was not random. Fourth, we did not account for death as a competing risk; individuals who died before developing dementia were treated as censored, which may bias results if BMI variability is also associated with mortality. Finally, the W9 landmark analysis had limited statistical power due to the small number of events (N = 63), and the separation issues observed in some covariate categories at later waves suggest caution in interpreting those results.
 
 ## Conclusions
-
+Greater long-term BMI variability is associated with a modestly increased risk of incident dementia among older U.S. adults, with stronger associations observed when variability is measured over longer time windows. While the effect is small relative to age and sociodemographic factors, BMI variability represents a potentially modifiable risk marker. Future research should investigate the biological mechanisms underlying this association and evaluate whether interventions promoting weight stability may contribute to dementia prevention.
 
 
 {{< pagebreak >}}

@@ -16,9 +16,9 @@ library(survival)
 # TABLE 1: Baseline Characteristics by BMI Variability Group
 # ============================================================
 
-#-------------------------------------------
+
 # 1. Create baseline dataset for the W3 analytic sample
-#-------------------------------------------
+
 
 # Get one row per person from the W3 analytic sample with BMIV group
 table1_ids <- landmark_results$W3$surv_model %>%
@@ -72,9 +72,9 @@ table1_data <- baseline_1996 %>%
     R_DEPRES    = factor(R_DEPRES)
   )
 
-#-------------------------------------------
+
 # 2. Create Table 1 with gtsummary
-#-------------------------------------------
+
 table1_gtsummary <- table1_data %>%
   select(
     BMIV_CAT_W3,
@@ -118,9 +118,9 @@ table1_gtsummary <- table1_data %>%
   add_p() %>%
   bold_labels()
 
-#-------------------------------------------
+
 # 3. Convert to gt and add title/footnote
-#-------------------------------------------
+
 table1_gt <- table1_gtsummary %>%
   as_gt() %>%
   tab_header(
@@ -136,11 +136,23 @@ table1_gt <- table1_gtsummary %>%
 # Print
 table1_gt
 
-#-------------------------------------------
-# 4. Save Table 1
-#-------------------------------------------
-saveRDS(table1_gt, here("results", "tables", "table1_gt.rds"))
+table1_ft <- table1_gtsummary %>%
+  as_flex_table() %>%
+  font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 9, part = "all") %>%
+  bold(part = "header") %>%
+  align(align = "center", part = "header") %>%
+  align(j = 1, align = "left", part = "body") %>%
+  padding(padding = 3, part = "all") %>%
+  line_spacing(space = 1, part = "all") %>%
+  autofit() %>%
+  set_table_properties(layout = "autofit", width = 1)
 
+saveRDS(table1_ft, here("results", "tables", "table1_ft.rds"))
+# 4. Save Table 1
+
+saveRDS(table1_gt, here("results", "tables", "table1_gt.rds"))
+saveRDS(table1_gtsummary, here("results", "tables", "table1_gtsummary.rds"))
 write_csv(
   table1_gtsummary %>% as_tibble(),
   here("results", "tables", "table1_baseline_by_bmiv_group.csv")
@@ -153,9 +165,9 @@ write_csv(
 #           Dementia Across Landmark Waves (W3, W6, W9)
 # ============================================================
 
-#-------------------------------------------
+
 # 1. Load saved model results
-#-------------------------------------------
+
 cox_results <- read_csv(
   here("results", "tables", "cox_w3_w9_all_models_combined.csv"),
   show_col_types = FALSE
@@ -174,9 +186,7 @@ cox_results <- cox_results %>%
 model_summary <- model_summary %>%
   filter(wave %in% target_waves)
 
-#-------------------------------------------
 # 2. Helper functions
-#-------------------------------------------
 format_hr_ci <- function(est, low, high, digits = 2) {
   if (any(is.na(c(est, low, high)))) return("")
   sprintf(
@@ -205,18 +215,17 @@ extract_result <- function(data, wave_value, model_value, term_value) {
   out %>% slice(1) %>% select(estimate, conf.low, conf.high, p.value)
 }
 
-#-------------------------------------------
+
 # 3. Define model structure
-#-------------------------------------------
 model_structure <- tibble(
   model_label        = c("Model 1", "Model 2"),
   continuous_source  = c("Unadjusted", "Adjusted"),
   categorical_source = c("Categorical_Unadjusted", "Categorical_Adjusted")
 )
 
-#-------------------------------------------
+
 # 4. Build Table 2 body
-#-------------------------------------------
+
 table2_data <- crossing(
   wave = target_waves,
   model_label = model_structure$model_label
@@ -263,9 +272,9 @@ table2_data <- crossing(
   select(wave_label, model_label, events_at_risk,
          continuous_hr, low_cat, mid_cat, high_cat, p_for_trend)
 
-#-------------------------------------------
+
 # 5. Create Table 2 with gt
-#-------------------------------------------
+
 table2_gt <- table2_data %>%
   gt(
     rowname_col   = "model_label",
@@ -304,13 +313,58 @@ table2_gt <- table2_data %>%
     )
   )
 
-# Print
-table2_gt
+table2_ft <- table2_data %>%
+  rename(
+    Wave = wave_label,
+    Model = model_label,
+    `Events / at risk` = events_at_risk,
+    `Continuous HR (95% CI)` = continuous_hr,
+    Low = low_cat,
+    Mid = mid_cat,
+    High = high_cat,
+    `p for trend` = p_for_trend
+  ) %>%
+  mutate(
+    Wave = factor(Wave, levels = c("Wave 3", "Wave 6", "Wave 9")),
+    Model = factor(Model, levels = c("Model 1", "Model 2"))
+  ) %>%
+  arrange(Wave, Model) %>%
+  mutate(
+    Wave = as.character(Wave),
+    Model = as.character(Model)
+  ) %>%
+  flextable() %>%
+  add_header_row(
+    values = c("", "", "", "", "BMIV categories, HR (95% CI)", ""),
+    colwidths = c(1, 1, 1, 1, 3, 1)
+  ) %>%
+  merge_v(j = "Wave") %>%
+  valign(j = "Wave", valign = "top") %>%
+  bold(j = "Wave", bold = TRUE, part = "body") %>%
+  bold(part = "header") %>%
+  align(j = c("Wave", "Model"), align = "left", part = "body") %>%
+  align(
+    j = c("Events / at risk", "Continuous HR (95% CI)", "Low", "Mid", "High", "p for trend"),
+    align = "center",
+    part = "all"
+  ) %>%
+  font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 9, part = "all") %>%
+  padding(padding = 3, part = "all") %>%
+  line_spacing(space = 1, part = "all") %>%
+  autofit() %>%
+  set_table_properties(layout = "autofit", width = 1) %>%
+  add_footer_lines(
+    values = c(
+      "Model 1 is the unadjusted model and Model 2 is the adjusted model.",
+      "Continuous HR represents the change in dementia risk per 1-unit increase in BMIV (CV, %).",
+      "BMIV groups were defined using W9 tertile cutpoints: Low ≤ 3.9%, Mid > 3.9% to ≤ 6.5%, and High > 6.5%."
+    )
+  ) %>%
+  fontsize(size = 8, part = "footer") %>%
+  italic(part = "footer")
 
-#-------------------------------------------
-# 6. Save Table 2
-#-------------------------------------------
-saveRDS(table2_gt, here("results", "tables", "table2_gt.rds"))
+saveRDS(table2_ft, here("results", "tables", "table2_ft.rds"))
 
 write_csv(
   table2_data,
