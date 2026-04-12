@@ -22,6 +22,8 @@ RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`,
 **Step 3 — Statistical modeling:**
 - Run `code/analysis-code/analysis.R`
 
+
+
 **Step 4 — Render manuscript:**
 - Run `manuscript/manuscript.qmd`
 
@@ -31,5 +33,5 @@ RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`,
 | Part 1 — Data description and research question | Done |
 | Part 2 — Data cleaning and EDA | Done |
 | Part 3 — Initial analysis | Done |
-| Part 4 — Full modeling | In progress |
-| Part 5/6 — Final report | Upcoming |
+| Part 4 — Full modeling | Done  |
+| Part 5/6 — Final report | Done  |
