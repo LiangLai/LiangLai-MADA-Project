@@ -54,9 +54,9 @@ library(gtsummary)
 # Introduction 
 
 ## General Background Information
-Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life. However, beyond mean BMI level, the stability of BMI over time may also carry prognostic information. Weight fluctuation has been associated with adverse cardiovascular and metabolic outcomes, but its relationship with cognitive decline and dementia remains understudied.
+Mid-life high body mass index (BMI) has been linked to poorer cognitive performance, faster cognitive decline, and higher risk of dementia in later life [@fitzpatrick2009; @li2021]. Large-scale evidence further suggests that the association between BMI and dementia depends in part on the timing of BMI assessment, with reverse causation likely influencing estimates obtained closer to dementia onset [@kivimaki2018]. However, beyond mean BMI level, the stability of BMI over time may also carry prognostic information [@singhmanoux2018; @beeri2022]. Weight fluctuation has been associated with adverse cardiovascular and metabolic outcomes, but its relationship with cognitive decline and dementia remains understudied.
 
-BMI variability reflects a pattern of weight instability that may arise from repeated dieting, chronic illness, metabolic dysregulation, or changes in physical activity. These fluctuations may contribute to neurodegeneration through chronic inflammation, insulin resistance, and vascular damage — pathways that are also implicated in dementia etiology. Despite growing interest in the role of body weight dynamics in brain aging, few studies have examined long-term BMI variability as a predictor of incident dementia in population-based cohorts.
+BMI variability reflects a pattern of weight instability that may arise from repeated dieting, chronic illness, metabolic dysregulation, or changes in physical activity. These fluctuations may contribute to neurodegeneration through chronic inflammation, insulin resistance, and vascular damage — pathways that are also implicated in dementia etiology. Despite growing interest in the role of body weight dynamics in brain aging, few studies have examined long-term BMI variability as a predictor of incident dementia in population-based cohorts [@guo2022;@xu2025].
 
 ## Description of data and data source
 We used data from the Health and Retirement Study (HRS), a nationally representative longitudinal survey of U.S. adults aged 50 and older, with biennial follow-up. The study period spans 1996–2020 (up to 13 waves). HRS collects repeated measures on demographics, socioeconomic status, health behaviors, and health conditions, and includes cognitive assessments that allow dementia classification. Cognitive status was classified using the Langa-Weir algorithm, which categorizes respondents into normal cognition, cognitive impairment no dementia (CIND), and dementia based on cognitive test scores.
@@ -115,7 +115,6 @@ All analyses were conducted in R (version 4.5.2) using the survival, ranger, ran
 ### Full Study Population
 The full processed HRS dataset included 10,317 individuals at the 1996 baseline wave. Over subsequent waves, the sample size gradually declined due to attrition, decreasing to 3,121 observations by 2020. The proportion of participants with normal cognition decreased over time, while the proportions with CIND and dementia increased, reflecting the aging of the cohort.
 
-@fig-sample-size shows the sample size by wave in the full processed dataset.
 ```{r}
 #| label: fig-sample-size
 #| fig-cap: "Sample Size by Wave in the Full Processed Dataset."
@@ -123,7 +122,6 @@ The full processed HRS dataset included 10,317 individuals at the 1996 baseline 
 knitr::include_graphics(here("results", "figures", "p1_sample_size_per_wave.png"))
 ```
 
-@fig-cog-wave shows the distribution of cognitive function categories across waves.
 ```{r}
 #| label: fig-cog-wave
 #| fig-cap: "Cognitive Function Distribution by Wave."
@@ -133,7 +131,6 @@ knitr::include_graphics(here("results", "figures", "p2_cogfunction_by_wave.png")
 
 BMI variability measures showed substantial overlap across wave windows, although the distributions shifted modestly to the right as the observation window became longer. This pattern suggests that longer wave windows may capture greater weight fluctuation over time.
 
-@fig-bmiv-density shows the distribution of BMI variability measures across wave windows in the full processed dataset.
 ```{r}
 #| label: fig-bmiv-density
 #| fig-cap: "Distribution of BMI Variability Measures Across Wave Windows."
@@ -197,7 +194,7 @@ In the W3 RSF, age at baseline was by far the strongest predictor of incident de
 ## Summary and Interpretation
 This study examined the association between long-term BMI variability and incident dementia risk among older U.S. adults using data from the Health and Retirement Study. Using a landmark analysis framework across multiple waves, we found that higher BMI variability was consistently associated with increased dementia risk. The association was strongest when BMI variability was measured over longer observation windows (W6 landmark), and the high variability group showed approximately 34–44% greater dementia risk compared with the low variability group across landmark waves.
 
-The RSF analysis provided complementary insights. While BMI variability ranked low in predictive importance when measured over only three waves (W3), its predictive contribution increased substantially with a longer measurement window (W6), where it ranked fourth among all covariates. This finding underscores that the predictive value of weight instability depends on the duration over which it is assessed. Importantly, the RSF results do not contradict the Cox regression findings; rather, they demonstrate that while BMIV is a statistically significant risk factor, its effect size is modest relative to established and non-modifiable predictors such as age, education, and race/ethnicity.
+The RSF analysis provided complementary insights. While BMI variability ranked low in predictive importance when measured over only three waves (W3), its predictive contribution increased substantially with a longer measurement window (W6), where it ranked fourth among all covariates. This finding underscores that the predictive value of weight instability depends on the duration over which it is assessed. Importantly, the RSF results do not contradict the Cox regression findings; rather, they demonstrate that while BMIV is a statistically significant risk factor, its effect size is modest relative to established and non-modifiable predictors such as age, education, and race/ethnicity [@mahinrad2023].
 
 ## Strengths and Limitations
 This study has several strengths. First, we used a large, nationally representative cohort with up to 24 years of follow-up, providing sufficient statistical power and generalizability. Second, the landmark analysis framework avoids immortal time bias and ensures temporal ordering of exposure and outcome. Third, we examined BMIV across multiple landmark waves, allowing assessment of how the measurement window length affects the observed association. Fourth, the supplementary RSF analysis provided an additional perspective on the predictive importance of BMIV using a flexible, non-parametric method.
