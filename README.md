@@ -27,7 +27,7 @@ RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`,
 4. `code/analysis-code/Result-Figure.R`
 
 **Step 4 — Render Manuscript:**
-- Run `manuscript/manuscript.qmd`
+- Run `Product/manuscript/manuscript.qmd`
 
 ## Project Status
 | Part | Status |
@@ -36,4 +36,5 @@ RAND HRS Longitudinal File 2020: `rlong_table.sas7bdat`, `hlong_table.sas7bdat`,
 | Part 2 — Data cleaning and EDA | Done |
 | Part 3 — Initial analysis | Done |
 | Part 4 — Full modeling | Done  |
-| Part 5/6 — Final report | Done  |
+| Part 5 — Final report for peer review | Done  |
+| Part 6 — Final project revision | In progress |
