@@ -1,0 +1,155 @@
+---
+title: Project Review Template 
+author: Joseph Dainis
+date: date-modified
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+---
+
+# Overview
+
+Title of project: Association between Body Mass Index Variability and Subsequent Dementia Risk in Older Adults
+
+Name of project author(s): Liang Lai
+
+Name of project reviewer: 2
+
+# Specific project content evaluation
+Evaluate the different parts of the project by filling in the sections below.
+
+
+## Background, Context and Motivation
+How well is the context of the project described? Is a comprehensive background, including summary of previous/related work given? Is the project well placed into the context of existing work (including proper referencing of existing work). Is it clear why the project was undertaken and what new information it hopes to provide?
+
+### Feedback and Comments
+
+The context of the project is very straightforward and to-the-point. The motivation for this work is clear: Body Mass Index has been shown by previous groups to associate with development of dementia in later stages of life, as well as other well-known, relevant disease risks. However, another factor that is often not considered is the variability in weight/BMI. This factor has been considered for the other relevant diseases, such as cardiovascular risks, but has not yet been assessed for dementia development. The introduction lacks context for more in-depth descriptions of Body Mass Index and dementia, assuming that the reader has knowledge of these afflictions. However, the motivation is clear, and there is relevant context with citations to prior literature for the motivation to investigate BMI variability as a predictor of dementia development.
+
+### Summary assessment (PICK ONE, DELETE THE OTHERS)
+* strong contextualization and motivation
+
+
+## Question description
+How well and clear are the question(s)/hypotheses the project aims to address described? Is it clear how the questions relate to the data?
+
+
+### Feedback and Comments
+
+It is clear how the questions relate to the data. The data used in this study was from a nationally conducted survey called the Health and Retirement Study (HRS). This study combined demographic information with cognitive measurements and health-related concerns, clearly allowing the author to assess how particular demographics, such as BMI, could predict cognitive decline and dementia diagnoses in the same cohort of surveyed individuals.
+
+### Summary assessment
+* question/hypotheses fully clear
+
+
+## Data description
+How well is the data overall described? Is the source provided? Is a codebook or other meta-information available that makes it clear what the data is? 
+
+### Feedback and Comments
+
+The data is simply described in the manuscript. The source is provided (Health and Retirement Study), but there is no description as to what institution conducted this study. A more detailed description on how the data was collected in the original study and who conducted the study would be helpful. A codebook is provided which assisted in interpreting the various acronyms used in the raw data. Due to the size of the raw data, it was not included in the Github repository, but links are provided in the ReadME file to download the raw data.
+
+### Summary assessment
+* source and overall structure of data somewhat explained
+
+
+## Data wrangling and exploratory analysis
+How well is the data cleaned/processed and explored? Are all steps reasonable and well explained? Are alternatives discussed and considered? Are meaningful exploratory results shown (e.g. in the supplementary materials)?
+
+### Feedback and Comments
+
+The data was not readily available in the repository, but it was explained in the EDA code how to access the data at the provided links. All of the cleaning steps appear to be well-explained and suitable adjustments to make the two data sets more user-friendly for this analysis. For the most part, each segment of code has an explanation behind the purpose of that stretch and extra details explaining what certain parts of the code is doing to accomplish the overall goal of the code. A number of steps included mutating the data to create BMI variables based on the available data, which made sense for the research question postulated. I think the exploratory analysis provided did a good job capturing the data. Three unique grap types were used, so it did not feel like a repetitive representation of the data. In addition, the use of tables to capture summary statistics of the large number of demographic variables was appropriate and a good idea. No alternatives were discussed/considered.
+
+### Summary assessment
+* essentially no weaknesses in wrangling and exploratory component
+
+
+
+## Appropriateness of Analysis
+Were the analysis methods appropriate for the data? Was the analysis done properly? Were different components of the analysis (e.g. performance measure, variable selection, data pre-processing, model evaluation) done in the best way possible and explained well?
+
+### Feedback and Comments
+
+It appears as though the analysis methods, which used a Cox regression analysis and a Random Forest machine learning model, were done properly. However, there are no justifications included in the manuscript which explains why these analysis methods were chosen over other methodologies, such as LASSO or other machine learning models. It would be nice to include a comparison between RF and LASSO to prove the Random Forest as the optimal model for this analysis in a supplement. In addition, the output was permutation scores, which shows the importance of the variables in predicting the outcome of dementia/cognitive decline in two landmark samples, but there is no information on whether the model performed well on the data itself. Further justification of the models used would be necessary to make this section of the manuscript stronger.
+
+### Summary assessment
+* defensible but not optimal analysis 
+
+## Presentation
+How well are results presented? Are tables and figures easy to read and understand? Are the main figures/tables publication level quality? 
+
+### Feedback and Comments
+
+The results are very nicely presented. For the exploratory data analysis, a very nice distribution of graph types and colors was used, making for a visually appealing set of graphs. The tables used to display the baseline characteristics and demographics of the surveyed cohorts and Cox regression models were nicely formatted and displayed. The only comment I would have would be to have a color gradient for the permutation scores to add a nice touch, with maybe a red color displaying negative permutation scores and a blue color displaying positive permutation scores. Otherwise, the results display publication level quality figures.
+
+### Summary assessment
+* results are very well presented
+
+
+## Discussion/Conclusions
+Are the study findings properly discussed? Are strengths and limitations acknowledged? Are findings interpreted properly?
+
+### Feedback and Comments
+
+The study findings are properly discussed, and the author does acknowledge several strengths and limitations of both the data being used for this analysis as well as the analysis methods used as part of this study. I believe the findings are interpreted properly, but I would suggest to temper the language used to describe the interpretations. For example, saying "we found that higher BMI variability was consistently associated with increased dementia risk" when one of your Landmark Waves (Wave 9) showed no association between BMIV and dementia risk in the Cox regression model would suggest to limit the strong language used to describe your interpretation. 
+
+### Summary assessment
+* strong, complete and clear discussion
+
+
+## Further comments
+
+One additional comment I would make is the value of the p-values in your table. I am not exactly sure what these p-values are evaluating the "significance" of, and would suggest thinking of removing them if they do not provide any relevant intepretations to your manuscript.
+
+
+
+# Overall project content evaluation
+Evaluate overall features of the project  by filling in the sections below.
+
+
+## Structure
+Is the project well structured? Are files in well labeled folders? Do files have reasonable names? Are all "junk" files not needed for analysis/reproduction removed? By just looking at files and folders, can you get an idea of how things fit together?
+
+### Feedback and Comments
+
+The project is well structured and the files are contained within well-labeled folders. I appreciated the inclusion of the original manuscripts as substitutions for the raw data being too large to include in the rawdata folder. Readme files provided helpful information for each folder and the contents of the files within them. I did not note any junk files that are not needed for analysis/reproducing the code. The structure of this repository is desgined to be very user friendly, and gave me a great idea of what would be contained and how to access particular codes to reproduce their data.
+
+### Summary assessment
+* well structured
+
+
+## Documentation 
+How well is the project documented? Are you able to understand each step of the whole analysis, each decision that was made, and each line of code? Is enough information provided as comments in code or as part of Rmd files? 
+
+### Feedback and Comments
+
+The document is for the most part well-documented. Each section of the code is well-documented, as I was provided a sentence explaining what that section/snippet of code would do. However, I would say not every line of code is clear as to what it is providing. A number of lines of code do not have any documentation clearly articulating why it was included or what exactly it was doing for that code, so additional documentation would be appreciated.
+
+### Summary assessment
+* decently documented with some gaps
+
+
+
+## Reproducibility
+Are all results fully reproducible? Is documentation provided which clearly explains how to reproduce things, and does it work without the need for any manual intervention? Are you able to re-run the whole analysis without having to do manual interventions/edits?
+
+### Feedback and Comments
+
+All results were fully reproducible. I was fairly impressed with the level of detail included on how to access the raw data used in this analysis, as again due to the size of the raw data it was not directly included in the repository. This was done at several different levels to fully drive home to the used of this repository that the raw data was not included, but here are explicit instructions on how to access the data, which made sense to me. I was able to re-run the whole analysis myself without having to do any ticky tacky adjustments.
+
+
+### Summary assessment
+* fully reproducible without issues
+
+
+## Thoroughness
+How thorough was the overall study? Were alternatives (e.g. different ways of processing the data or different models) considered? Were alternatives discussed? Were the questions/hypotheses fully and thoroughly addressed?
+
+### Feedback and Comments
+
+I would say the overall study was somewhat thorough. The questions and hypotheses were fully addressed, mutating the data to introduce a BMIV variable to use based on data included in the raw data. However, as mentioned previously, the author did not provide sound justifications for the different analysis methods used in this study, particularly at the modeling stages. There was no justification provided for why the Random Forest Model was selected, and it is unclear whether a LASSO or other machine learning model would do better with the data provided, as there was not a metric provided which proved that the RF model suited the data well.
+
+### Summary assessment
+* decent level of thoroughness
