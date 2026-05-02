@@ -1,0 +1,13 @@
+model,.metric,.estimator,.estimate
+Random forest,brier_class,binary,0.03337231957500478
+Logistic regression,brier_class,binary,0.03338105337520083
+LASSO logistic regression,brier_class,binary,0.03338264239321528
+Null model,brier_class,binary,0.0338894495013395
+Logistic regression,pr_auc,binary,0.08301171813023225
+LASSO logistic regression,pr_auc,binary,0.08109746793334649
+Random forest,pr_auc,binary,0.07758716194455637
+Null model,pr_auc,binary,0.03507271171941831
+LASSO logistic regression,roc_auc,binary,0.6604826154644525
+Random forest,roc_auc,binary,0.6583419823559937
+Logistic regression,roc_auc,binary,0.6524390243902439
+Null model,roc_auc,binary,0.5
