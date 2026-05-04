@@ -1,0 +1,173 @@
+---
+title: Project Review Template 
+author: Esther Palmer
+date: date-modified
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+---
+
+# Overview
+
+Title of project:
+
+Name of project author(s):
+
+Name of project reviewer:
+
+
+# Specific project content evaluation
+Evaluate the different parts of the project by filling in the sections below.
+
+
+## Background, Context and Motivation
+How well is the context of the project described? Is a comprehensive background, including summary of previous/related work given? Is the project well placed into the context of existing work (including proper referencing of existing work). Is it clear why the project was undertaken and what new information it hopes to provide?
+
+### Feedback and Comments
+
+The background makes sense, and your question is clear.
+
+### Summary assessment (PICK ONE, DELETE THE OTHERS)
+* strong contextualization and motivation
+
+
+## Question description
+How well and clear are the question(s)/hypotheses the project aims to address described? Is it clear how the questions relate to the data?
+
+
+### Feedback and Comments
+
+Your question you want to ask is clear, you want to look at the link between BMI variability and dementia.
+
+### Summary assessment
+
+* question/hypotheses fully clear
+
+
+## Data description
+How well is the data overall described? Is the source provided? Is a codebook or other meta-information available that makes it clear what the data is? 
+
+### Feedback and Comments
+
+did provide original link to source. 
+
+### Summary assessment
+
+* source and overall structure of data well explained
+
+
+## Data wrangling and exploratory analysis
+How well is the data cleaned/processed and explored? Are all steps reasonable and well explained? Are alternatives discussed and considered? Are meaningful exploratory results shown (e.g. in the supplementary materials)?
+
+### Feedback and Comments
+
+The cleaning code makes sense and is well annotated. Your EDA figures are pretty and well constructed.
+
+### Summary assessment
+
+* essentially no weaknesses in wrangling and exploratory component
+
+
+
+## Appropriateness of Analysis
+Were the analysis methods appropriate for the data? Was the analysis done properly? Were different components of the analysis (e.g. performance measure, variable selection, data pre-processing, model evaluation) done in the best way possible and explained well?
+
+### Feedback and Comments
+
+Multiple models were used and they seem correct? There is not much interpretation inside the actual code itself, which is fine, just slightly harder to follow.
+
+### Summary assessment
+
+* strong and reasonable analysis
+
+## Presentation
+How well are results presented? Are tables and figures easy to read and understand? Are the main figures/tables publication level quality? 
+
+### Feedback and Comments
+
+Results and figures are easy to follow.
+
+### Summary assessment
+
+* results are very well presented
+
+
+## Discussion/Conclusions
+Are the study findings properly discussed? Are strengths and limitations acknowledged? Are findings interpreted properly?
+
+### Feedback and Comments
+
+Discussion looks well done to me, it seems like results are well interpreted and strengths/limitations well discussed.
+
+### Summary assessment
+
+* strong, complete and clear discussion
+
+
+## Further comments
+
+_Add any other comments regarding the different aspects of the project here. Write anything you think can help your classmate improve their project._
+
+
+
+# Overall project content evaluation
+Evaluate overall features of the project  by filling in the sections below.
+
+
+## Structure
+Is the project well structured? Are files in well labeled folders? Do files have reasonable names? Are all "junk" files not needed for analysis/reproduction removed? By just looking at files and folders, can you get an idea of how things fit together?
+
+### Feedback and Comments
+
+Files are well structured, although there are a lot of files under the analysis code section. However, the readme for the analysis code is very helpful in determining what to run first, and explains what each file is for.
+
+### Summary assessment
+* well structured
+
+
+## Documentation 
+How well is the project documented? Are you able to understand each step of the whole analysis, each decision that was made, and each line of code? Is enough information provided as comments in code or as part of Rmd files? 
+
+### Feedback and Comments
+
+Well documented, its easy to follow what each chunk of code is for. It's not always easy to follow each line, however I suspect that's due more to my own inexperience than anything else.
+
+### Summary assessment
+
+* fully and well documented
+
+## Reproducibility
+Are all results fully reproducible? Is documentation provided which clearly explains how to reproduce things, and does it work without the need for any manual intervention? Are you able to re-run the whole analysis without having to do manual interventions/edits?
+
+### Feedback and Comments
+
+I could reproduce everything.
+
+
+### Summary assessment
+
+* fully reproducible without issues
+
+
+## Thoroughness
+How thorough was the overall study? Were alternatives (e.g. different ways of processing the data or different models) considered? Were alternatives discussed? Were the questions/hypotheses fully and thoroughly addressed?
+
+### Feedback and Comments
+
+Different models were considered, and alternatives discussed.
+
+### Summary assessment
+
+* strong level of thorougness
+
+
+## Further comments
+
+_Add any other comments regarding the overall project here. Write anything you think can help your classmate improve their project._
+
+
+Well done! :)
+
+
