@@ -1,0 +1,180 @@
+---
+title: "Project Review"
+author: "Alexandra Tejada-Strop"
+date: "2026-04-24"
+format: html
+---
+
+# Overview
+
+**Title of project:** Association between Body Mass Index Variability and Subsequent Dementia Risk in Older Adults
+
+**Name of project author:** Liang Lai
+
+**Name of project reviewer:** Alexandra Tejada-Strop
+
+---
+
+# 3 Specific Project Content Evaluation
+
+## 3.1 Background, Context and Motivation
+
+### Feedback and Comments
+
+The background is well developed. The introduction walks through the existing literature on BMI and dementia clearly and builds a logical case for why BMI variability specifically has not been studied enough. The motivation for the study is clear without being overstated.
+
+### Summary Assessment
+
+Strong contextualization and motivation
+
+---
+
+## 3.2 Question Description
+
+### Feedback and Comments
+
+The research question and hypothesis are both stated clearly. The hypothesis that higher BMI variability will be associated with greater dementia risk, and that this will be stronger over longer measurement windows, maps directly onto the analysis that follows. No issues here.
+
+### Summary Assessment
+
+Question/hypotheses fully clear
+
+---
+
+## 3.3 Data Description
+
+### Feedback and Comments
+
+The HRS data source is explained clearly, and it is helpful that links are included for both the main dataset and the Langa Weir cognition classification. The README also does a good job showing what to download and where everything should go. One thing that could make this even clearer is adding a short overview of the dataset in the manuscript itself, for example how many waves there are, how often data is collected, and the types of variables included. That would help readers who are not already familiar with HRS.
+
+### Summary Assessment
+
+Source and overall structure of data well explained
+
+---
+
+## 3.4 Data Wrangling and Exploratory Analysis
+
+### Feedback and Comments
+
+The EDA worked without issues. The figures make it easy to understand the data. I also liked that you checked for extreme BMI CV values, since that shows attention to data quality. The W3 section with the stratified baseline table was helpful too and gave some context before moving into the modeling.
+
+One thing I noticed is that there is not much discussion of missing BMI data before interpolation or how many observations needed it. Since the exposure is based on those values, adding a short note on missingness would help give a fuller picture.
+
+### Summary Assessment
+
+Some weaknesses in wrangling and exploratory component
+
+---
+
+## 3.5 Appropriateness of Analysis
+
+### Feedback and Comments
+
+The landmark analysis is relevant to this question. Using Cox models across multiple waves to see how the time window affects results was a smart choice. The additional RSF analysis also adds something useful. The models ran as expected across all seven waves, but I did notice a couple of convergence warnings in the Cox models. It looks like some covariate groups had very few or no events in certain waves, which can make the estimates unstable.
+
+The Schoenfeld residual test is mentioned, but the results are not shown. Adding a short note on whether the proportional hazards assumption held would make this more complete. Finally, the W9 wave only has 63 dementia events, which is pretty small given the number of covariates in the model, so those results may need to be interpreted more carefully.
+
+### Summary Assessment
+
+Defensible but not optimal analysis
+
+---
+
+## 3.6 Presentation
+
+### Feedback and Comments
+
+The figures in the EDA look good and are easy to read. The colors used for cognitive status groups are consistent across the plots, which helps with interpretation. The baseline characteristics table is clear, and the Cox results table does a good job showing the main findings across waves. The RSF variable importance plots are also a nice addition.
+
+I was able to find all of the figures in the results folder, and both table .rds files loaded without issues. The only problem I ran into is that the manuscript would not fully render because of a conflict with the package version which is then mentioned in the reproducibility section, so I could not fully check the final output.
+
+### Summary Assessment
+
+Results are very well presented
+
+---
+
+## 3.7 Discussion/Conclusions
+
+### Feedback and Comments
+
+The discussion feels balanced. The way the RSF results are interpreted alongside the Cox findings stands out and helps tie everything together. The limitations section covers the main points. The conclusion does not overstate the results. Also, while competing risks are mentioned, this feels like an important issue in this population, so it might be worth expanding on it a bit more instead of just listing it as a limitation.
+
+### Summary Assessment
+
+Minor parts wrong, missing or unclear
+
+---
+
+## 3.8 Further Comments
+
+This is a really strong project, especially for a course setting. The topic is relevant, the design makes sense, and the analysis goes into a good level of detail. A few things to focus on before the final version are the competing risks issue, reporting the proportional hazards test results, adding more context around missing BMI data, and separating the results from the discussion.
+
+---
+
+# 4 Overall Project Content Evaluation
+
+## 4.1 Structure
+
+### Feedback and Comments
+
+The folder structure follows the course template and is easy to move through. Everything is labeled clearly and organized in a way that makes sense. I did notice a few small things that could be cleaned up. There is a debug.log file in the repo that could be added to .gitignore, and the .vscode folder is also included, which is editor specific and probably does not need to be there. One of the scripts is named "Supplementary ML .R" with a space in the name, which can cause issues when running it.
+
+### Summary Assessment
+
+Mostly clear, but some confusing parts
+
+---
+
+## 4.2 Documentation
+
+### Feedback and Comments
+
+The .qmd files do a good job explaining what each section is doing before the code runs. One area that could use more detail is package versions. When I tried to reproduce the analysis, I ran into a few issues that are not mentioned in the README or comments. For example, the zoo package is used in statistical-analysis.R but is not listed as a dependency. In Result-Table.R, the function set_table_properties() from flextable is used, but it is not available in newer versions. I had to install an older version, 0.9.4, to get that script to run.
+
+Even after that, the manuscript still would not render because that older flextable version does not work well with newer versions of Quarto, which caused an error in the baseline table section. I also noticed that running Result-Table.R seemed to trigger part of the processing script, which then failed since the raw HRS data is not included in the repo.
+
+### Summary Assessment
+
+Decently documented with some gaps
+
+---
+
+## 4.3 Reproducibility
+
+### Feedback and Comments
+
+The reproduction steps in the README are easy to follow. I was able to run the EDA, statistical analysis, and supplementary ML scripts once I installed a few missing packages.
+
+That said, I was not able to fully reproduce everything without some manual fixes. The zoo package is used in statistical-analysis.R but is not listed anywhere, so it had to be installed separately. Result-Table.R also depends on a specific version of flextable, version 0.9.4, but that is not documented. The current CRAN version does not work, and installing the older version requires using remotes::install_version(), which is not something most users would expect.
+
+Even after that, the manuscript still would not fully render because of a compatibility issue between flextable 0.9.4 and the current version of Quarto. I also ran into an issue where Result-Table.R seemed to trigger part of the processing script, which then failed since the raw data files are not included in the repo.
+
+The supplementary material also did not render because resulttable1.rds is missing from the results/tables folder. On top of that, the file path listed in the README for rendering the manuscript does not match the actual location. The README points to manuscript/manuscript.qmd, but the file is actually under products/manuscript/Manuscript.qmd, which could cause problems for anyone following the instructions step by step.
+
+### Summary Assessment
+
+Small parts not reproducible or required manual intervention
+
+---
+
+## 4.4 Thoroughness
+
+### Feedback and Comments
+
+The study does a good job working through the research question across multiple waves, which helps show how the time window affects the results. Looking at both continuous and categorical exposures, along with Cox models and RSF, adds a lot of depth to the analysis.
+
+I did notice some convergence warnings in the later Cox models, which suggests an issue and might be worth explaining more clearly. Another area to consider is a sensitivity analysis for competing risks from death. Adding that would help strengthen the overall analysis.
+
+### Summary Assessment
+
+Strong level of thoroughness
+
+---
+
+## 4.5 Further Comments
+
+This is a solid project overall. The research question is clear, the analysis is well done, and the writing is easy to follow.
+
+Nice work overall, Liang!
